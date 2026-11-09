@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#003c24"><title>Parent Account · Fairybucks</title>
+<style>
+:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(ellipse at top,#14704a,#003520 72%);font:16px/1.5 system-ui,sans-serif;color:#412d17;display:flex;justify-content:center;align-items:flex-start;padding:clamp(18px,5vw,56px) 14px}.panel{width:min(100%,460px);background:linear-gradient(135deg,#fff6dc,#f7dfa7);border:3px double #bc8b30;border-radius:24px;box-shadow:0 18px 50px #00180f77;padding:clamp(20px,5vw,32px)}h1{font:italic bold 35px Georgia,serif;color:#075037;text-align:center;margin:4px 0 0}.subtitle{text-align:center;color:#6e4b1e;margin:0 0 18px}.lock{text-align:center;font-size:36px}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.tabs button{flex:1;min-width:100px}.tab,button,a.cta{border:1px solid #a67b34;border-radius:12px;padding:12px 14px;background:#ffe9b3;color:#4f3014;font-weight:700;cursor:pointer}.tab.active,button.primary,a.cta{color:#fff2ce;background:#07573a;border-color:#07573a}button:disabled{opacity:.55;cursor:wait}label{display:block;font-weight:650;font-size:14px;margin:13px 0 4px}input{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #d69b2e;outline-offset:2px}form button{width:100%;margin-top:18px}.muted{font-size:13px;color:#725632}.notice{padding:12px;border-radius:12px;background:#fff9e7;border:1px solid #c99f58;font-size:14px;margin:14px 0;overflow-wrap:anywhere}.notice.error{border-color:#aa4c45;color:#832d27}.notice.ok{border-color:#478464;color:#185638}a{color:#07583b}.links{text-align:center;margin:20px 0 0;font-size:14px}.links a{margin:0 7px}.hidden{display:none!important}.footer{text-align:center;font-size:12px;color:#745631;margin:20px 0 0}.status{font-weight:650}.screen[hidden]{display:none}.cta{display:block;text-align:center;text-decoration:none;margin:12px 0}.signed{background:#fff9e7;padding:14px;border-radius:12px}.banner{font-size:12px;text-align:center;line-height:1.6;margin-top:14px}
+</style></head><body><main class="panel">
+<div class="lock" aria-hidden="true">🧚‍♀️ 🔐</div><h1>Fairybucks</h1><p class="subtitle">Parent Account Portal</p>
+<div class="notice">For grown-ups only. Real accounts are being tested; family wallets and treasure approvals are still demo features.</div>
+<div id="message" role="status" aria-live="polite" class="hidden"></div>
+<div id="setup" class="notice" hidden>Account sign-in isn't connected yet. Enter the public Supabase publishable key in <code>auth-config.js</code> after reviewing this change. Do not use a secret key.</div>
+<div id="loading" class="notice">Preparing secure sign-in…</div>
+<div id="auth-area" hidden>
+<div class="tabs" role="group" aria-label="Account actions">
+<button type="button" class="tab active" data-tab="login">Log in</button>
+<button type="button" class="tab" data-tab="signup">Sign up</button>
+<button type="button" class="tab" data-tab="forgot">Reset password</button>
+</div>
+<form class="screen" id="login"><label for="login-email">Parent email</label><input id="login-email" type="email" autocomplete="email" required maxlength="254"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Sign in securely</button></form>
+<form class="screen" id="signup" hidden><label for="signup-email">Parent email</label><input id="signup-email" type="email" autocomplete="email" required maxlength="254"><label for="signup-password">Create a password (12+ characters)</label><input id="signup-password" type="password" autocomplete="new-password" minlength="12" required><button class="primary" type="submit">Create parent account</button><p class="muted">Only parents register. Children do not receive individual accounts.</p></form>
+<form class="screen" id="forgot" hidden><label for="forgot-email">Your parent email</label><input id="forgot-email" type="email" autocomplete="email" required maxlength="254"><button class="primary" type="submit">Email me a reset link</button></form>
+</div>
+<form id="new-password" hidden><h2 id="password-title">Set your parent password</h2><p class="muted">Only enter a password after opening a valid account invitation or recovery link.</p><label for="password-new">New password (12+ characters)</label><input id="password-new" type="password" autocomplete="new-password" minlength="12" required><label for="password-confirm">Confirm password</label><input id="password-confirm" type="password" autocomplete="new-password" minlength="12" required><button class="primary" type="submit">Save password</button></form>
+<section id="signed-in" class="signed" hidden><h2>Parent account signed in ✓</h2><p id="signed-email" class="muted"></p><p>Authentication works. The live family dashboard, PIN unlock, and real balances are not connected yet.</p><button type="button" id="logout">Sign out</button><p class="muted">This page does not authorize spending or modify Fairy Bucks.</p></section>
+<p class="links"><a href="/">← Magical Home</a><a href="/#">Explore Treasures</a></p><p class="footer">A Little Magic, A Lot of Treasure ✨</p>
+</main>
+<script src="/auth-config.js"></script>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+const cfg=window.FAIRYBUCKS_AUTH_CONFIG;
+const $=id=>document.getElementById(id);
+const message=(text,kind="")=>{const n=$("message");n.className="notice "+kind;n.textContent=text;};
+const origin=location.origin;
+const target=origin+"/auth.html";
+let client=null, passwordFlow=false, callbackSeen=false;
+function tab(which){for(const t of document.querySelectorAll("[data-tab]"))t.classList.toggle("active",t.dataset.tab===which);for(const id of ["login","signup","forgot"])$(id).hidden=id!==which;$("auth-area").hidden=false;$("new-password").hidden=true;$("signed-in").hidden=true;}
+function signed(user){$("auth-area").hidden=true;$("new-password").hidden=true;$("signed-in").hidden=false;$("signed-email").textContent=user.email||"Signed in";$("loading").hidden=true;}
+function newPassword(invite){passwordFlow=true;$("auth-area").hidden=true;$("signed-in").hidden=true;$("new-password").hidden=false;$("password-title").textContent=invite?"Accept your invitation":"Choose a new password";$("loading").hidden=true;}
+async function initialize(){
+ if(!cfg?.url||!/^sb_publishable_/.test(cfg.publishableKey||"")){$("loading").hidden=true;$("setup").hidden=false;return;}
+ client=createClient(cfg.url,cfg.publishableKey,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
+ const params=new URLSearchParams(location.hash.slice(1));
+ const search=new URLSearchParams(location.search);
+ const type=params.get("type")||search.get("type")||"";
+ const hasTokens=params.has("access_token")||search.has("code")||search.has("token_hash");
+ callbackSeen=hasTokens;
+ client.auth.onAuthStateChange((evt,session)=>{
+  if(evt==="PASSWORD_RECOVERY")newPassword(false);
+  if(evt==="SIGNED_OUT"){passwordFlow=false;tab("login");}
+ });
+ try{
+  if(search.has("token_hash") && type){
+   const {error}=await client.auth.verifyOtp({token_hash:search.get("token_hash"),type});
+   if(error)throw error;
+  }else if(search.has("code")){
+   const {error}=await client.auth.exchangeCodeForSession(search.get("code"));
+   // Already processed callbacks may have been consumed by the SDK.
+   if(error){const {data}=await client.auth.getSession();if(!data.session)throw error;}
+  }
+  const {data,error}=await client.auth.getSession();if(error)throw error;
+  history.replaceState(null,"",location.pathname);
+  $("loading").hidden=true;
+  if(type==="recovery" && data.session){newPassword(false);}
+  else if(type==="invite" && data.session){newPassword(true);}
+  else if(data.session?.user && hasTokens && !type){newPassword(true);}
+  else if(data.session?.user)signed(data.session.user);
+  else {tab("login");if(hasTokens)message("This link expired or could not be verified. Request a new invitation or reset link.","error");}
+ }catch(e){$("loading").hidden=true;tab("login");message(e.message||"Could not complete the email link. Please request a new one.","error");history.replaceState(null,"",location.pathname);}
+}
+async function submit(form,operation){
+ const btn=form.querySelector("button[type=submit]");btn.disabled=true;message("Processing…");
+ try{await operation();}catch(e){message(e.message||"Something went wrong.","error");}finally{btn.disabled=false;}
+}
+for(const b of document.querySelectorAll("[data-tab]"))b.addEventListener("click",()=>{message("");tab(b.dataset.tab);});
+$("signup").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.signUp({email:$("signup-email").value.trim(),password:$("signup-password").value,options:{emailRedirectTo:target}});if(error)throw error;message("Check your email for a confirmation link. If an account already exists, use Log in or Reset password.","ok");});});
+$("login").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {data,error}=await client.auth.signInWithPassword({email:$("login-email").value.trim(),password:$("login-password").value});if(error)throw error;signed(data.user);message("Signed in successfully.","ok");});});
+$("forgot").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.resetPasswordForEmail($("forgot-email").value.trim(),{redirectTo:target});if(error)throw error;message("If that email has an account, you'll receive a reset link.","ok");});});
+$("new-password").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const pw=$("password-new").value;if(pw!==$("password-confirm").value)throw Error("Passwords don't match.");const {data,error}=await client.auth.updateUser({password:pw});if(error)throw error;passwordFlow=false;signed(data.user);message("Password saved. You're signed in to your parent account.","ok");});});
+$("logout").addEventListener("click",async()=>{if(!client)return;const {error}=await client.auth.signOut();if(error)message(error.message,"error");else{tab("login");message("Signed out.","ok");}});
+initialize().catch(e=>{$("loading").hidden=true;$("setup").hidden=false;message("Couldn't start sign-in: "+e.message,"error");});
+</script></body></html>
