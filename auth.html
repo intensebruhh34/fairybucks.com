@@ -13,6 +13,9 @@
 .vault-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
 .vault-stat{display:grid;gap:4px;padding:10px;border:1px solid #e0c791;border-radius:10px}
 .vault-message{border-top:1px solid #e0c791;margin-top:16px}
+.vault-history{padding-left:22px}
+.vault-history li{margin:6px 0;overflow-wrap:anywhere}
+#parent-controls{border-top:1px solid #e0c791;margin-top:16px;padding-top:12px}
 #profile-form{margin:14px 0 0}
 #profile-form summary{color:#07583b;font-weight:700;cursor:pointer}
 #profile-fields{border:0;padding:0;margin:0;min-width:0}
@@ -72,10 +75,35 @@
 <a href="#">← Back to Family Vault</a>
 <h2 id="explorer-title" tabindex="-1"></h2>
 <div class="vault-stats">
-<div class="vault-stat"><strong>🪙 Fairy Bucks</strong><span class="muted">Wallet coming soon</span></div>
-<div class="vault-stat"><strong>🦷 Teeth</strong><span class="muted">Tracker coming soon</span></div>
+<div class="vault-stat"><strong>🪙 Fairy Bucks</strong><span id="wallet-balance" class="muted">—</span></div>
+<div class="vault-stat"><strong>🦷 Teeth</strong><span id="tooth-count" class="muted">—</span></div>
+</div>
+<p id="wallet-status" role="status" class="muted"></p>
+<button type="button" id="wallet-retry" hidden>Reload wallet</button>
+<div id="wallet-history" hidden>
+<details><summary>Fairy Buck history</summary><ul id="wallet-transactions" class="vault-history"></ul></details>
+<details><summary>Tooth history</summary><ul id="tooth-history" class="vault-history"></ul></details>
 </div>
 <a id="explorer-shop" class="cta" href="/#shop">Explore Treasures</a>
+<details id="parent-controls">
+<summary>🔐 Parent controls</summary>
+<p id="pin-status" role="status" class="muted"></p>
+<button type="button" id="pin-retry" hidden>Check PIN status</button>
+<form id="pin-form" hidden>
+<label for="parent-pin">Six-digit Parent PIN</label>
+<input id="parent-pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" required>
+<div id="pin-confirm-area" hidden>
+<label for="parent-pin-confirm">Confirm Parent PIN</label>
+<input id="parent-pin-confirm" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off">
+</div>
+<button type="submit" id="pin-submit" class="primary">Unlock</button>
+</form>
+<div id="tooth-controls" hidden>
+<p>Each tooth earns 5 Fairy Bucks.</p>
+<button type="button" class="primary" id="record-tooth">Record a lost tooth</button>
+<p id="tooth-status" role="status" class="muted"></p>
+</div>
+</details>
 <div class="vault-message"><h3>🪄 Fairy Message</h3><p>Wonderful treasures and magical adventures await!</p></div>
 </section>
 </section>
@@ -84,12 +112,14 @@
 <script src="/auth-config.js"></script>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { explorerWallet } from "/explorer-wallet.js";
 const cfg=window.FAIRYBUCKS_AUTH_CONFIG;
 const $=id=>document.getElementById(id);
 const message=(text,kind="")=>{const n=$("message");n.className="notice "+kind;n.textContent=text;};
 const origin=location.origin;
 const target=origin+"/auth.html";
 let client=null, familyView=null;
+const wallet=explorerWallet(()=>client);
 function explorerHash(){
  return location.hash.match(/^#explorer=[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i)?.[0]||"";
 }
@@ -103,6 +133,7 @@ function showExplorer(view){
  $("portal-shop").hidden=Boolean(profile);
  $("explorer-title").textContent=profile?`✨ ${profile.nickname}’s Fairy Vault`:"";
  $("explorer-shop").href=profile?"/#shop&explorer="+profile.id:"/#shop";
+ wallet.open(profile?.id);
  if(profile && !wasOpen)$("explorer-title").focus();
  if(!profile && hash){
   history.replaceState(null,"",location.pathname);
@@ -111,6 +142,7 @@ function showExplorer(view){
 }
 function hideFamily(){
  familyView=null;
+ wallet.open();
  $("signed-in").hidden=true;
  $("signed-email").textContent="";
  $("family-status").textContent="";
