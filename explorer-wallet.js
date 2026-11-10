@@ -1,4 +1,4 @@
-export function explorerWallet(getClient) {
+export function explorerWallet(getClient, onUnlockChange = () => {}) {
   const $ = id => document.getElementById(id);
   const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" });
   const entryTime = new Intl.DateTimeFormat(undefined, { timeStyle: "medium" });
@@ -13,6 +13,7 @@ export function explorerWallet(getClient) {
   }
 
   async function loadWallet(view) {
+    const request = view.walletRequest = {};
     $("wallet-status").textContent = "Opening your wallet…";
     $("wallet-retry").hidden = true;
     try {
@@ -20,7 +21,7 @@ export function explorerWallet(getClient) {
         p_child_id: view.childId
       });
       if (error || !data) throw error || new Error("Explorer is unavailable");
-      if (view !== active) return;
+      if (view !== active || view.walletRequest !== request) return;
       $("wallet-balance").textContent = data.balance + " FB";
       $("tooth-count").textContent = String(data.tooth_count);
       setList("wallet-transactions", data.transactions.map(row =>
@@ -47,7 +48,7 @@ export function explorerWallet(getClient) {
       $("wallet-history").hidden = false;
       $("wallet-status").textContent = "";
     } catch {
-      if (view !== active) return;
+      if (view !== active || view.walletRequest !== request) return;
       $("wallet-status").textContent = "We couldn't load this wallet. Try again.";
       $("wallet-retry").hidden = false;
     }
@@ -68,6 +69,7 @@ export function explorerWallet(getClient) {
     $("tooth-correction").open = false;
     $("pin-status").textContent = "";
     $("tooth-status").textContent = "";
+    onUnlockChange();
   }
 
   function showPin(view, status) {
@@ -126,11 +128,13 @@ export function explorerWallet(getClient) {
       $("pin-form").hidden = true;
       $("pin-status").textContent = "Parent controls unlocked for up to five minutes.";
       $("tooth-controls").hidden = false;
+      onUnlockChange();
       view.expiry = setTimeout(() => {
         if (view !== active) return;
         view.token = null;
         $("tooth-controls").hidden = true;
         showPin(view, "pin_required");
+        onUnlockChange();
       }, 5 * 60 * 1000);
     } catch {
       if (view === active) $("pin-status").textContent = "Couldn't check the PIN. Try again.";
@@ -254,6 +258,17 @@ export function explorerWallet(getClient) {
   $("undo-tooth-form").addEventListener("submit", undoTooth);
 
   return {
+    unlockToken(childId) {
+      return active?.childId === childId ? active?.token : null;
+    },
+    lock(childId) {
+      if (active?.childId !== childId) return;
+      resetPin(active);
+      showPin(active, "pin_required");
+    },
+    refresh(childId) {
+      if (active?.childId === childId) return loadWallet(active);
+    },
     open(childId) {
       if (childId === active?.childId) return;
       resetPin(active);
