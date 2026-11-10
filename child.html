@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#003822">
+<title>My Fairy Vault · Fairybucks</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#176746,#003221 70%);min-height:100vh;padding:20px 12px;color:#412d17;font:16px/1.5 system-ui,sans-serif}
+main{max-width:760px;margin:auto;padding:clamp(18px,5vw,32px);border:3px double #bd913f;border-radius:24px;background:linear-gradient(140deg,#fff6dc,#f7dfa7)}
+h1,h2,h3{font-family:Georgia,serif;color:#075038;overflow-wrap:anywhere}
+h1{margin-top:0}
+button,summary{cursor:pointer}
+button{border:1px solid #a67b34;border-radius:10px;padding:10px 14px;background:#fff5d9;color:#154831;font:inherit;font-weight:650}
+button.primary{background:#07573a;color:#fff6dc;border-color:#07573a}
+button:disabled{opacity:.55}
+:focus-visible{outline:3px solid #b4781d;outline-offset:2px}
+.stats,.catalog{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px}
+article,.stats>div{border:1px solid #d5b77a;border-radius:12px;background:#fff9e7;padding:12px;overflow-wrap:anywhere}
+article h3{margin:4px 0}
+.muted{color:#694d2c}
+#request-list{padding-left:22px}
+#request-list li{padding:6px 0}
+#request-list button{margin-left:8px}
+footer{margin-top:24px;border-top:1px solid #d5b77a;padding-top:16px}
+</style>
+</head>
+<body>
+<main>
+<h1 id="child-title">✨ My Fairy Vault</h1>
+<p id="child-status" role="status" aria-live="polite">Opening your Fairy Vault…</p>
+<button type="button" id="child-retry" hidden>Try again</button>
+<div id="child-content" hidden>
+<div class="stats">
+<div><strong>🪙 Fairy Bucks</strong><div id="child-balance"></div></div>
+<div><strong>🦷 Teeth collected</strong><div id="child-teeth"></div></div>
+</div>
+<section aria-labelledby="child-requests">
+<h2 id="child-requests">📦 My Treasure Requests</h2>
+<ul id="request-list"></ul>
+<button type="button" id="child-refresh">Refresh vault</button>
+</section>
+<section aria-labelledby="child-shop">
+<h2 id="child-shop">🏰 Explore Treasures</h2>
+<div id="child-catalog" class="catalog"></div>
+</section>
+</div>
+<footer><button type="button" id="child-exit">Return to parent sign-in</button></footer>
+</main>
+<script src="/auth-config.js"></script>
+<script type="module" src="/child-vault.js"></script>
+</body>
+</html>
