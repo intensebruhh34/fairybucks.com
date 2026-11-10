@@ -1,5 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { childToken, clearChildToken, readChildRequests, storeChildRequests } from "/child-session.js";
+import { treasureIcon } from "/treasure-catalog.js";
 
 const $ = id => document.getElementById(id);
 const config = window.FAIRYBUCKS_AUTH_CONFIG;
@@ -17,13 +18,32 @@ const statusLabels = {
 };
 let busy = false;
 let viewRequest = 0;
+let catalog = [];
+let category = "All";
+
+const navigation = [...document.querySelectorAll("[data-child-page]")];
+const filters = [...document.querySelectorAll("[data-child-category]")];
+
+function showPage(focus = false) {
+  const page = navigation.find(link => link.hash === location.hash)?.dataset.childPage || "vault";
+  for (const link of navigation) {
+    const selected = link.dataset.childPage === page;
+    $("child-page-" + link.dataset.childPage).hidden = !selected;
+    if (selected) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+  if (focus && !$("child-content").hidden) {
+    $("child-page-" + page).querySelector("h2").focus();
+    window.scrollTo(0, 0);
+  }
+}
 
 function actionButton(label, action, primary = false) {
   const button = document.createElement("button");
   button.type = "button";
   button.textContent = label;
   button.disabled = busy;
-  if (primary) button.className = "primary";
+  button.className = primary ? "fairy-action block" : "fairy-action ghost";
   button.addEventListener("click", action);
   return button;
 }
@@ -32,10 +52,23 @@ function render(vault) {
   $("child-title").textContent = "✨ " + vault.nickname + "’s Fairy Vault";
   $("child-balance").textContent = vault.balance + " FB";
   $("child-teeth").textContent = vault.tooth_count;
+  $("child-tooth-grid").replaceChildren(...Array.from({ length: 20 }, (_, index) => {
+    const slot = document.createElement("span");
+    const filled = index < vault.tooth_count;
+    slot.className = filled ? "tooth-slot filled" : "tooth-slot";
+    slot.textContent = filled ? "🦷" : "✧";
+    return slot;
+  }));
   $("request-list").replaceChildren(...vault.requests.map(request => {
     const item = document.createElement("li");
-    item.textContent = request.name + " · " + request.price + " FB · " +
-      (statusLabels[request.status] || request.status);
+    item.className = "request-row";
+    const detail = document.createElement("p");
+    detail.textContent = request.name + " · " + request.price + " FB ";
+    const badge = document.createElement("span");
+    badge.className = "request-status " + request.status;
+    badge.textContent = statusLabels[request.status] || request.status;
+    detail.append(badge);
+    item.append(detail);
     if (request.status === "pending") {
       item.append(actionButton("Cancel request", () => cancel(request)));
     }
@@ -46,16 +79,41 @@ function render(vault) {
     empty.textContent = "No treasure requests yet.";
     $("request-list").append(empty);
   }
-  $("child-catalog").replaceChildren(...vault.catalog.map(treasure => {
+  catalog = vault.catalog;
+  renderCatalog();
+  showPage();
+  $("child-content").hidden = false;
+}
+
+function renderCatalog() {
+  for (const filter of filters) {
+    const selected = filter.dataset.childCategory === category;
+    filter.setAttribute("aria-pressed", String(selected));
+    if (selected) filter.setAttribute("aria-current", "true");
+    else filter.removeAttribute("aria-current");
+  }
+  $("child-catalog").replaceChildren(...catalog
+    .filter(treasure => category === "All" || treasure.category === category)
+    .map(treasure => {
     const card = document.createElement("article");
+    card.className = "treasure-card";
+    const art = document.createElement("div");
+    art.className = "treasure-art";
+    art.setAttribute("aria-hidden", "true");
+    art.textContent = treasureIcon(treasure.key);
+    const body = document.createElement("div");
+    body.className = "treasure-body";
+    const label = document.createElement("small");
+    label.textContent = treasure.category;
     const title = document.createElement("h3");
     title.textContent = treasure.name;
     const detail = document.createElement("p");
-    detail.textContent = treasure.category + " · " + treasure.price + " FB";
-    card.append(title, detail, actionButton("Request Treasure", () => request(treasure), true));
+    detail.className = "treasure-price";
+    detail.textContent = "🪙 " + treasure.price + " FB";
+    body.append(label, title, detail, actionButton("Request Treasure", () => request(treasure), true));
+    card.append(art, body);
     return card;
   }));
-  $("child-content").hidden = false;
 }
 
 function closeVault(message) {
@@ -66,6 +124,8 @@ function closeVault(message) {
   $("child-title").textContent = "✨ My Fairy Vault";
   $("child-balance").textContent = "";
   $("child-teeth").textContent = "";
+  $("child-tooth-grid").replaceChildren();
+  catalog = [];
   $("child-status").textContent = message;
   $("child-retry").hidden = true;
 }
@@ -149,6 +209,7 @@ async function request(treasure) {
     if (!Object.hasOwn(messages, status)) throw new Error("Request not confirmed");
     pending.delete(treasure.key);
     storeChildRequests(pending);
+    if (status === "requested" || status === "already_pending") location.hash = "#requests";
     return messages[status];
   });
 }
@@ -163,6 +224,13 @@ async function cancel(request) {
 }
 
 $("child-retry").addEventListener("click", () => load());
+for (const filter of filters) {
+  filter.addEventListener("click", () => {
+    category = filter.dataset.childCategory;
+    renderCatalog();
+  });
+}
+window.addEventListener("hashchange", () => showPage(true));
 $("child-refresh").addEventListener("click", () => { if (!busy) load(); });
 $("child-exit").addEventListener("click", async () => {
   if (busy) return;
