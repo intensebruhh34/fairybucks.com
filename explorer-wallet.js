@@ -1,6 +1,7 @@
 export function explorerWallet(getClient) {
   const $ = id => document.getElementById(id);
   const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" });
+  const entryTime = new Intl.DateTimeFormat(undefined, { timeStyle: "medium" });
   let active = null;
 
   function setList(id, items, empty) {
@@ -28,6 +29,21 @@ export function explorerWallet(getClient) {
       setList("tooth-history", data.teeth.map(day =>
         dateFormat.format(new Date(day + "T12:00:00Z"))
       ), "No lost teeth recorded yet.");
+      view.correctable = data.correctable_teeth ?? [];
+      const selector = $("undo-tooth-id");
+      const selected = selector.value;
+      const prompt = document.createElement("option");
+      prompt.value = "";
+      prompt.textContent = "Choose a tooth entry";
+      selector.replaceChildren(prompt, ...view.correctable.map((tooth, index) => {
+        const option = document.createElement("option");
+        option.value = tooth.id;
+        option.textContent = (index + 1) + ". " + dateFormat.format(new Date(tooth.lost_on + "T12:00:00Z")) +
+          " · recorded at " + entryTime.format(new Date(tooth.created_at));
+        return option;
+      }));
+      if (view.correctable.some(tooth => tooth.id === selected)) selector.value = selected;
+      $("tooth-correction").hidden = !view.correctable.length;
       $("wallet-history").hidden = false;
       $("wallet-status").textContent = "";
     } catch {
@@ -48,6 +64,8 @@ export function explorerWallet(getClient) {
     $("pin-retry").hidden = true;
     $("tooth-controls").hidden = true;
     $("record-tooth").disabled = false;
+    $("undo-tooth").disabled = false;
+    $("tooth-correction").open = false;
     $("pin-status").textContent = "";
     $("tooth-status").textContent = "";
   }
@@ -61,7 +79,7 @@ export function explorerWallet(getClient) {
     $("pin-retry").hidden = status !== "locked";
     const prompts = {
       setup_required: "Set a Parent PIN to protect tooth rewards. Keep it somewhere safe.",
-      pin_required: "Enter your Parent PIN to record a lost tooth.",
+      pin_required: "Enter your Parent PIN to record or correct a lost tooth.",
       incorrect_pin: "That PIN didn't match. Try again.",
       invalid_pin: "Enter six digits.",
       locked: "Too many tries. Wait 15 minutes before trying again."
@@ -145,8 +163,8 @@ export function explorerWallet(getClient) {
 
   async function recordTooth() {
     const view = active;
-    if (!view?.token || $("record-tooth").disabled) return;
-    $("record-tooth").disabled = true;
+    if (!view?.token || view.saving) return;
+    setSaving(view, true);
     $("tooth-status").textContent = "Saving tooth and reward…";
     try {
       const pending = pendingTooth(view);
@@ -162,7 +180,7 @@ export function explorerWallet(getClient) {
         }
         return;
       }
-      if (data !== "saved") throw new Error("Tooth save not confirmed");
+      if (data !== "saved" && data !== "corrected") throw new Error("Tooth save not confirmed");
       try {
         const key = "fairybucks-tooth:" + view.childId;
         if (JSON.parse(sessionStorage.getItem(key))?.id === pending.id) sessionStorage.removeItem(key);
@@ -171,12 +189,55 @@ export function explorerWallet(getClient) {
       }
       view.pending = null;
       if (view !== active) return;
-      $("tooth-status").textContent = "Tooth recorded. 5 Fairy Bucks earned!";
+      $("tooth-status").textContent = data === "corrected"
+        ? "This tooth was already corrected."
+        : "Tooth recorded. 5 Fairy Bucks earned!";
       await loadWallet(view);
     } catch {
       if (view === active) $("tooth-status").textContent = "Couldn't confirm the save. Try again to finish this tooth reward.";
     } finally {
-      if (view === active) $("record-tooth").disabled = false;
+      setSaving(view, false);
+    }
+  }
+
+  function setSaving(view, saving) {
+    view.saving = saving;
+    if (view !== active) return;
+    $("record-tooth").disabled = saving;
+    $("undo-tooth").disabled = saving;
+    $("undo-tooth-id").disabled = saving;
+  }
+
+  async function undoTooth(event) {
+    event.preventDefault();
+    const view = active;
+    if (!view?.token || view.saving) return;
+    const tooth = view.correctable?.find(entry => entry.id === $("undo-tooth-id").value);
+    if (!tooth || !window.confirm("Undo this tooth entry and take back " + tooth.reward + " Fairy Bucks?")) return;
+    setSaving(view, true);
+    $("tooth-status").textContent = "Correcting tooth and reward…";
+    try {
+      const { data, error } = await getClient().rpc("fairybucks_undo_tooth", {
+        p_child_id: view.childId, p_tooth_id: tooth.id, p_unlock_token: view.token
+      });
+      if (error) throw error;
+      if (view !== active) return;
+      if (data === "unlock_required") {
+        resetPin(view);
+        showPin(view, "pin_required");
+        return;
+      }
+      if (data === "insufficient_balance") {
+        $("tooth-status").textContent = "This vault doesn't have enough Fairy Bucks to take back that reward.";
+        return;
+      }
+      if (data !== "undone") throw new Error("Tooth correction not confirmed");
+      $("tooth-status").textContent = "Tooth entry corrected. " + tooth.reward + " Fairy Bucks taken back.";
+      await loadWallet(view);
+    } catch {
+      if (view === active) $("tooth-status").textContent = "Couldn't confirm the correction. Try the same entry again.";
+    } finally {
+      setSaving(view, false);
     }
   }
 
@@ -190,6 +251,7 @@ export function explorerWallet(getClient) {
   $("pin-retry").addEventListener("click", () => { if (active) checkPin(active); });
   $("pin-form").addEventListener("submit", submitPin);
   $("record-tooth").addEventListener("click", recordTooth);
+  $("undo-tooth-form").addEventListener("submit", undoTooth);
 
   return {
     open(childId) {
@@ -203,6 +265,9 @@ export function explorerWallet(getClient) {
       $("wallet-retry").hidden = true;
       $("wallet-transactions").replaceChildren();
       $("tooth-history").replaceChildren();
+      $("tooth-correction").hidden = true;
+      $("undo-tooth-id").replaceChildren();
+      $("undo-tooth-id").disabled = false;
       active = childId ? { childId } : null;
       if (active) loadWallet(active);
     }
