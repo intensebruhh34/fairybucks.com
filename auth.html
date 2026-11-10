@@ -86,6 +86,16 @@
 <details><summary>Tooth history</summary><ul id="tooth-history" class="vault-history"></ul></details>
 </div>
 <a id="explorer-shop" class="cta" href="/#shop">Explore Treasures</a>
+<section id="treasure-request-area" aria-labelledby="treasure-requests-title">
+<h3 id="treasure-requests-title">📦 Treasure requests</h3>
+<p id="treasure-request-status" role="status" class="muted"></p>
+<button type="button" id="treasure-retry" hidden>Reload requests</button>
+<div id="treasure-offer" hidden>
+<p id="treasure-offer-name"></p>
+<button type="button" id="treasure-submit" class="primary">Send request</button>
+</div>
+<ul id="treasure-requests-list" class="vault-history"></ul>
+</section>
 <details id="parent-controls">
 <summary>🔐 Parent controls</summary>
 <p id="pin-status" role="status" class="muted"></p>
@@ -112,6 +122,11 @@
 </form>
 </details>
 <p id="tooth-status" role="status" class="muted"></p>
+<section id="treasure-review" aria-labelledby="treasure-review-title" hidden>
+<h3 id="treasure-review-title">Review treasure requests</h3>
+<p id="treasure-review-status" role="status" class="muted"></p>
+<ul id="treasure-review-list" class="vault-history"></ul>
+</section>
 </div>
 </details>
 <div class="vault-message"><h3>🪄 Fairy Message</h3><p>Wonderful treasures and magical adventures await!</p></div>
@@ -123,20 +138,23 @@
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { explorerWallet } from "/explorer-wallet.js";
+import { explorerRequests } from "/explorer-requests.js";
 const cfg=window.FAIRYBUCKS_AUTH_CONFIG;
 const $=id=>document.getElementById(id);
 const message=(text,kind="")=>{const n=$("message");n.className="notice "+kind;n.textContent=text;};
 const origin=location.origin;
 const target=origin+"/auth.html";
 let client=null, familyView=null;
-const wallet=explorerWallet(()=>client);
+const wallet=explorerWallet(()=>client,()=>requests.renderReview());
+const requests=explorerRequests(()=>client,wallet);
 function explorerHash(){
- return location.hash.match(/^#explorer=[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i)?.[0]||"";
+ return location.hash.match(/^#explorer=[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}(?:&treasure=(?:[1-9]|1[0-2]))?$/i)?.[0]||"";
 }
 function showExplorer(view){
  if(view!==familyView || !view?.profiles)return;
  const hash=explorerHash();
- const profile=view.profiles.find(({id})=>hash==="#explorer="+id);
+ const route=new URLSearchParams(hash.slice(1));
+ const profile=view.profiles.find(({id})=>route.get("explorer")===id);
  const wasOpen=!$("explorer-vault").hidden;
  $("family-overview").hidden=Boolean(profile);
  $("explorer-vault").hidden=!profile;
@@ -144,6 +162,7 @@ function showExplorer(view){
  $("explorer-title").textContent=profile?`✨ ${profile.nickname}’s Fairy Vault`:"";
  $("explorer-shop").href=profile?"/#shop&explorer="+profile.id:"/#shop";
  wallet.open(profile?.id);
+ requests.open(profile?.id,Number(route.get("treasure")));
  if(profile && !wasOpen)$("explorer-title").focus();
  if(!profile && hash){
   history.replaceState(null,"",location.pathname);
@@ -153,6 +172,7 @@ function showExplorer(view){
 function hideFamily(){
  familyView=null;
  wallet.open();
+ requests.open();
  $("signed-in").hidden=true;
  $("signed-email").textContent="";
  $("family-status").textContent="";
