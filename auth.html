@@ -127,7 +127,9 @@
 <p id="treasure-review-status" role="status" class="muted"></p>
 <ul id="treasure-review-list" class="vault-history"></ul>
 </section>
+<p><button type="button" id="hand-over-magic">🪄 Hand Over the Magic</button></p>
 </div>
+<p id="handoff-status" role="status" class="muted"></p>
 </details>
 <div class="vault-message"><h3>🪄 Fairy Message</h3><p>Wonderful treasures and magical adventures await!</p></div>
 </section>
@@ -139,6 +141,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { explorerWallet } from "/explorer-wallet.js";
 import { explorerRequests } from "/explorer-requests.js";
+import { childToken, storeChildToken } from "/child-session.js";
 const cfg=window.FAIRYBUCKS_AUTH_CONFIG;
 const $=id=>document.getElementById(id);
 const message=(text,kind="")=>{const n=$("message");n.className="notice "+kind;n.textContent=text;};
@@ -147,6 +150,12 @@ const target=origin+"/auth.html";
 let client=null, familyView=null;
 const wallet=explorerWallet(()=>client,()=>requests.renderReview());
 const requests=explorerRequests(()=>client,wallet);
+function redirectChildSession(){
+ if(!childToken())return false;
+ hideFamily();
+ location.replace("/child.html");
+ return true;
+}
 function explorerHash(){
  return location.hash.match(/^#explorer=[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}(?:&treasure=(?:[1-9]|1[0-2]))?$/i)?.[0]||"";
 }
@@ -173,6 +182,7 @@ function hideFamily(){
  familyView=null;
  wallet.open();
  requests.open();
+ $("handoff-status").textContent="";
  $("signed-in").hidden=true;
  $("signed-email").textContent="";
  $("family-status").textContent="";
@@ -308,6 +318,7 @@ async function saveProfile(event){
  }
 }
 async function initialize(){
+ if(redirectChildSession())return;
  if(!cfg?.url||!/^sb_publishable_/.test(cfg.publishableKey||"")){$("loading").hidden=true;$("setup").hidden=false;return;}
  client=createClient(cfg.url,cfg.publishableKey,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
  const params=new URLSearchParams(location.hash.slice(1));
@@ -337,6 +348,39 @@ async function initialize(){
   else {tab("login");if(hasTokens)message("This link expired or could not be verified. Request a new invitation or reset link.","error");}
  }catch(e){$("loading").hidden=true;tab("login");message(e.message||"Could not complete the email link. Please request a new one.","error");history.replaceState(null,"",location.pathname);}
 }
+async function handOverMagic(){
+ const view=familyView;
+ const childId=new URLSearchParams(explorerHash().slice(1)).get("explorer");
+ const unlock=wallet.unlockToken(childId);
+ const button=$("hand-over-magic");
+ if(!unlock || button.disabled)return;
+ if(!window.confirm("Open this explorer’s child vault? This tab will sign out of the parent account. Returning to parent controls requires signing in again."))return;
+ button.disabled=true;
+ $("handoff-status").textContent="Opening the explorer’s vault…";
+ try{
+  const {data,error}=await client.rpc("fairybucks_start_child_session",{
+   p_child_id:childId,p_unlock_token:unlock
+  });
+  if(error)throw error;
+  if(view!==familyView || !explorerHash().startsWith("#explorer="+childId))return;
+  wallet.lock(childId);
+  if(!data){
+   $("handoff-status").textContent="Unlock Parent controls again to start the child session.";
+   return;
+  }
+  const signOut=await client.auth.signOut({scope:"local"});
+  if(signOut.error)throw signOut.error;
+  const {data:authState,error:sessionError}=await client.auth.getSession();
+  if(sessionError || authState.session)throw sessionError||new Error("Parent session is still open");
+  storeChildToken(data);
+  location.replace("/child.html");
+ }catch{
+  $("handoff-status").textContent="Couldn't open the child vault. Unlock Parent controls to try again.";
+  if(!familyView)message("Sign in again to try opening the child vault.","error");
+ }finally{
+  button.disabled=false;
+ }
+}
 async function submit(form,operation){
  const btn=form.querySelector("button[type=submit]");btn.disabled=true;message("Processing…");
  try{await operation();}catch(e){message(e.message||"Something went wrong.","error");}finally{btn.disabled=false;}
@@ -351,6 +395,8 @@ $("family-retry").addEventListener("click",()=>{if(!$("family-retry").hidden)loa
 $("profile-retry").addEventListener("click",()=>{if(familyView?.familyId && !$("profile-retry").hidden)loadProfiles(familyView);});
 $("add-profile").addEventListener("submit",saveProfile);
 window.addEventListener("hashchange",()=>showExplorer(familyView));
+window.addEventListener("pageshow",event=>{if(event.persisted)redirectChildSession();});
+$("hand-over-magic").addEventListener("click",handOverMagic);
 $("logout").addEventListener("click",async()=>{if(!client)return;const {error}=await client.auth.signOut();if(error)message(error.message,"error");else{history.replaceState(null,"",location.pathname);tab("login");message("Signed out.","ok");}});
 initialize().catch(e=>{$("loading").hidden=true;$("setup").hidden=false;message("Couldn't start sign-in: "+e.message,"error");});
 </script></body></html>
