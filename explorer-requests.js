@@ -18,12 +18,20 @@ export function explorerRequests(getClient, wallet) {
   function renderList(id, rows, parent = false) {
     const items = rows.map(request => {
       const item = document.createElement("li");
+      item.className = "request-row";
       const line = document.createElement("p");
-      line.textContent = request.name + " · " + request.price + " FB · " + (statusLabels[request.status] || request.status);
+      line.textContent = request.name + " · " + request.price + " FB ";
+      const badge = document.createElement("span");
+      badge.className = "request-status " + request.status;
+      badge.textContent = statusLabels[request.status] || request.status;
+      line.append(badge);
       item.append(line);
       if (request.status === "pending") {
-        if (parent) item.append(action("Approve", request, "approved"), action("Decline", request, "declined"));
-        else item.append(action("Cancel request", request, "cancelled"));
+        const actions = document.createElement("div");
+        actions.className = "request-actions";
+        if (parent) actions.append(action("Approve", request, "approved"), action("Decline", request, "declined"));
+        else actions.append(action("Cancel request", request, "cancelled"));
+        item.append(actions);
       }
       return item;
     });
