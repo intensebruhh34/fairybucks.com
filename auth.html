@@ -4,9 +4,17 @@
 <meta name="theme-color" content="#003c24"><title>Parent Account · Fairybucks</title>
 <style>
 :root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(ellipse at top,#14704a,#003520 72%);font:16px/1.5 system-ui,sans-serif;color:#412d17;display:flex;justify-content:center;align-items:flex-start;padding:clamp(18px,5vw,56px) 14px}.panel{width:min(100%,460px);background:linear-gradient(135deg,#fff6dc,#f7dfa7);border:3px double #bc8b30;border-radius:24px;box-shadow:0 18px 50px #00180f77;padding:clamp(20px,5vw,32px)}h1{font:italic bold 35px Georgia,serif;color:#075037;text-align:center;margin:4px 0 0}.subtitle{text-align:center;color:#6e4b1e;margin:0 0 18px}.lock{text-align:center;font-size:36px}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.tabs button{flex:1;min-width:100px}.tab,button,a.cta{border:1px solid #a67b34;border-radius:12px;padding:12px 14px;background:#ffe9b3;color:#4f3014;font-weight:700;cursor:pointer}.tab.active,button.primary,a.cta{color:#fff2ce;background:#07573a;border-color:#07573a}button:disabled{opacity:.55;cursor:wait}label{display:block;font-weight:650;font-size:14px;margin:13px 0 4px}input{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #d69b2e;outline-offset:2px}form button{width:100%;margin-top:18px}.muted{font-size:13px;color:#725632}.notice{padding:12px;border-radius:12px;background:#fff9e7;border:1px solid #c99f58;font-size:14px;margin:14px 0;overflow-wrap:anywhere}.notice.error{border-color:#aa4c45;color:#832d27}.notice.ok{border-color:#478464;color:#185638}a{color:#07583b}.links{text-align:center;margin:20px 0 0;font-size:14px}.links a{margin:0 7px}.hidden{display:none!important}.footer{text-align:center;font-size:12px;color:#745631;margin:20px 0 0}.status{font-weight:650}.screen[hidden]{display:none}.cta{display:block;text-align:center;text-decoration:none;margin:12px 0}.signed{background:#fff9e7;padding:14px;border-radius:12px}.banner{font-size:12px;text-align:center;line-height:1.6;margin-top:14px}
+#vault-profiles{margin:18px 0;border-top:1px solid #c99f58;padding-top:8px}
+#vault-profiles h3{margin-bottom:4px}
+#profile-list{list-style:none;margin:12px 0;padding:0}
+#profile-list li{border:1px solid #e0c791;border-radius:10px;padding:10px 12px;margin-top:8px;overflow-wrap:anywhere}
+#profile-form{margin:14px 0 0}
+#profile-form summary{color:#07583b;font-weight:700;cursor:pointer}
+#profile-fields{border:0;padding:0;margin:0;min-width:0}
+#profile-form select{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}
 </style></head><body><main class="panel">
 <div class="lock" aria-hidden="true">🧚‍♀️ 🔐</div><h1>Fairybucks</h1><p class="subtitle">Parent Account Portal</p>
-<div class="notice">For grown-ups only. You can connect your parent account to a Family Vault here. Family wallets and treasure approvals are still demo features.</div>
+<div class="notice">For grown-ups only. Sign in to open your Family Vault and set up your explorers.</div>
 <div id="message" role="status" aria-live="polite" class="hidden"></div>
 <div id="setup" class="notice" hidden>Account sign-in isn't connected yet. Enter the public Supabase publishable key in <code>auth-config.js</code> after reviewing this change. Do not use a secret key.</div>
 <div id="loading" class="notice">Preparing secure sign-in…</div>
@@ -26,6 +34,32 @@
 <p id="family-status" role="status" aria-live="polite"></p>
 <p><button type="button" id="family-create" class="primary" hidden>Set up my Family Vault</button>
 <button type="button" id="family-retry" hidden>Check again</button></p>
+<section id="vault-profiles" aria-labelledby="profile-heading" hidden>
+<h3 id="profile-heading">Your Explorers</h3>
+<p class="muted">Add a profile for each child in your family.</p>
+<p id="profile-status" role="status" aria-live="polite"></p>
+<button type="button" id="profile-retry" hidden>Reload explorers</button>
+<ul id="profile-list"></ul>
+<details id="profile-form" hidden>
+<summary>Add an explorer</summary>
+<form id="add-profile">
+<fieldset id="profile-fields">
+<label for="profile-name">First name or nickname</label>
+<input id="profile-name" maxlength="35" autocomplete="off" required>
+<label for="profile-age">Age (optional, 2–18)</label>
+<input id="profile-age" type="number" min="2" max="18" step="1" inputmode="numeric">
+<label for="profile-gender">Gender (optional)</label>
+<select id="profile-gender">
+<option value="rather-not-say">Rather not say</option>
+<option value="boy">Boy</option>
+<option value="girl">Girl</option>
+</select>
+<button type="submit" class="primary">Save explorer</button>
+</fieldset>
+<p id="profile-save-status" role="status" aria-live="polite" class="muted"></p>
+</form>
+</details>
+</section>
 <button type="button" id="logout">Sign out</button>
 </section>
 <p class="links"><a href="/">← Magical Home</a><a href="/#">Explore Treasures</a></p><p class="footer">A Little Magic, A Lot of Treasure ✨</p>
@@ -46,9 +80,19 @@ function hideFamily(){
  $("family-status").textContent="";
  $("family-create").hidden=true;
  $("family-retry").hidden=true;
+ $("vault-profiles").hidden=true;
+ $("profile-form").hidden=true;
+ $("profile-form").open=false;
+ $("profile-retry").hidden=true;
+ $("profile-list").replaceChildren();
+ $("profile-status").textContent="";
+ $("profile-save-status").textContent="";
+ $("add-profile").reset();
+ $("profile-fields").disabled=false;
 }
 function tab(which){for(const t of document.querySelectorAll("[data-tab]"))t.classList.toggle("active",t.dataset.tab===which);for(const id of ["login","signup","forgot"])$(id).hidden=id!==which;$("auth-area").hidden=false;$("new-password").hidden=true;hideFamily();}
 function signed(user){
+ hideFamily();
  $("auth-area").hidden=true;
  $("new-password").hidden=true;
  $("signed-in").hidden=false;
@@ -80,10 +124,75 @@ async function loadFamily(view, create=false){
    ?"Your parent account is connected to your Family Vault."
    :"Set up a Family Vault for your parent account.";
   $("family-create").hidden=Boolean(data);
+  if(data){
+   view.familyId=data.id;
+   $("vault-profiles").hidden=false;
+   loadProfiles(view);
+  }
  }catch{
   if(view!==familyView)return;
   $("family-status").textContent="We couldn't check your Family Vault. Please try again.";
   $("family-retry").hidden=false;
+ }
+}
+async function loadProfiles(view){
+ $("profile-retry").hidden=true;
+ $("profile-status").textContent="Finding your explorers…";
+ try{
+  const {data,error}=await client.from("child_profiles")
+   .select("nickname").eq("family_id",view.familyId).order("created_at").order("id");
+  if(error)throw error;
+  if(view!==familyView)return;
+  const explorers=data.map(({nickname})=>{
+   const item=document.createElement("li");
+   item.textContent=nickname;
+   return item;
+  });
+  $("profile-list").replaceChildren(...explorers);
+  $("profile-status").textContent=explorers.length?"":"Your vault is ready. Add your first explorer below.";
+  $("profile-form").hidden=false;
+ }catch{
+  if(view!==familyView)return;
+  $("profile-status").textContent="We couldn't load your explorers. Please try again.";
+  $("profile-retry").hidden=false;
+ }
+}
+async function saveProfile(event){
+ event.preventDefault();
+ const view=familyView;
+ const fields=$("profile-fields");
+ if(!view?.familyId || $("profile-form").hidden || fields.disabled)return;
+ const nickname=$("profile-name").value.trim();
+ if(!nickname){
+  $("profile-save-status").textContent="Enter a first name or nickname.";
+  $("profile-name").focus();
+  return;
+ }
+ fields.disabled=true;
+ $("profile-save-status").textContent="Saving your explorer…";
+ try{
+  // Retain the ID if the response is lost so a retry cannot create a second profile.
+  view.pendingProfileId ??= crypto.randomUUID();
+  const profile={
+   id:view.pendingProfileId, family_id:view.familyId, nickname,
+   age:$("profile-age").value===""?null:$("profile-age").valueAsNumber,
+   gender:$("profile-gender").value
+  };
+  const {error}=await client.from("child_profiles").upsert(
+   profile,{onConflict:"id",ignoreDuplicates:true}
+  );
+  if(error)throw error;
+  if(view!==familyView)return;
+  view.pendingProfileId=null;
+  $("add-profile").reset();
+  $("profile-save-status").textContent="";
+  $("profile-form").open=false;
+  await loadProfiles(view);
+ }catch{
+  if(view!==familyView)return;
+  $("profile-save-status").textContent="We couldn't confirm the save. Select Save explorer to try again.";
+ }finally{
+  if(view===familyView)fields.disabled=false;
  }
 }
 async function initialize(){
@@ -127,6 +236,8 @@ $("forgot").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTar
 $("new-password").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const pw=$("password-new").value;if(pw!==$("password-confirm").value)throw Error("Passwords don't match.");const {data,error}=await client.auth.updateUser({password:pw});if(error)throw error;signed(data.user);message("Password saved. You're signed in to your parent account.","ok");});});
 $("family-create").addEventListener("click",()=>{if(!$("family-create").hidden)loadFamily(familyView,true);});
 $("family-retry").addEventListener("click",()=>{if(!$("family-retry").hidden)loadFamily(familyView);});
+$("profile-retry").addEventListener("click",()=>{if(familyView?.familyId && !$("profile-retry").hidden)loadProfiles(familyView);});
+$("add-profile").addEventListener("submit",saveProfile);
 $("logout").addEventListener("click",async()=>{if(!client)return;const {error}=await client.auth.signOut();if(error)message(error.message,"error");else{tab("login");message("Signed out.","ok");}});
 initialize().catch(e=>{$("loading").hidden=true;$("setup").hidden=false;message("Couldn't start sign-in: "+e.message,"error");});
 </script></body></html>
