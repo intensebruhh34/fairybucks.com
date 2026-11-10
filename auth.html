@@ -19,7 +19,8 @@
 #profile-form{margin:14px 0 0}
 #profile-form summary{color:#07583b;font-weight:700;cursor:pointer}
 #profile-fields{border:0;padding:0;margin:0;min-width:0}
-#profile-form select{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}
+#profile-form select,#undo-tooth-id{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}
+#tooth-correction{margin-top:12px}
 </style></head><body><main class="panel">
 <div class="lock" aria-hidden="true">🧚‍♀️ 🔐</div><h1>Fairybucks</h1><p class="subtitle">Parent Account Portal</p>
 <div class="notice">For grown-ups only. Sign in to open your Family Vault and set up your explorers.</div>
@@ -101,6 +102,15 @@
 <div id="tooth-controls" hidden>
 <p>Each tooth earns 5 Fairy Bucks.</p>
 <button type="button" class="primary" id="record-tooth">Record a lost tooth</button>
+<details id="tooth-correction" hidden>
+<summary>Correct tooth count</summary>
+<form id="undo-tooth-form">
+<label for="undo-tooth-id">Tooth entry to undo</label>
+<select id="undo-tooth-id" required></select>
+<p class="muted">Undoing the entry also takes back its Fairy Buck reward.</p>
+<button type="submit" id="undo-tooth">Undo selected tooth</button>
+</form>
+</details>
 <p id="tooth-status" role="status" class="muted"></p>
 </div>
 </details>
