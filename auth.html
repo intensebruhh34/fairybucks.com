@@ -2,6 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#003c24"><title>Parent Account · Fairybucks</title>
+<link rel="stylesheet" href="/vault-theme.css">
 <style>
 :root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(ellipse at top,#14704a,#003520 72%);font:16px/1.5 system-ui,sans-serif;color:#412d17;display:flex;justify-content:center;align-items:flex-start;padding:clamp(18px,5vw,56px) 14px}.panel{width:min(100%,460px);background:linear-gradient(135deg,#fff6dc,#f7dfa7);border:3px double #bc8b30;border-radius:24px;box-shadow:0 18px 50px #00180f77;padding:clamp(20px,5vw,32px)}h1{font:italic bold 35px Georgia,serif;color:#075037;text-align:center;margin:4px 0 0}.subtitle{text-align:center;color:#6e4b1e;margin:0 0 18px}.lock{text-align:center;font-size:36px}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.tabs button{flex:1;min-width:100px}.tab,button,a.cta{border:1px solid #a67b34;border-radius:12px;padding:12px 14px;background:#ffe9b3;color:#4f3014;font-weight:700;cursor:pointer}.tab.active,button.primary,a.cta{color:#fff2ce;background:#07573a;border-color:#07573a}button:disabled{opacity:.55;cursor:wait}label{display:block;font-weight:650;font-size:14px;margin:13px 0 4px}input{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #d69b2e;outline-offset:2px}form button{width:100%;margin-top:18px}.muted{font-size:13px;color:#725632}.notice{padding:12px;border-radius:12px;background:#fff9e7;border:1px solid #c99f58;font-size:14px;margin:14px 0;overflow-wrap:anywhere}.notice.error{border-color:#aa4c45;color:#832d27}.notice.ok{border-color:#478464;color:#185638}a{color:#07583b}.links{text-align:center;margin:20px 0 0;font-size:14px}.links a{margin:0 7px}.hidden{display:none!important}.footer{text-align:center;font-size:12px;color:#745631;margin:20px 0 0}.status{font-weight:650}.screen[hidden]{display:none}.cta{display:block;text-align:center;text-decoration:none;margin:12px 0}.signed{background:#fff9e7;padding:14px;border-radius:12px}.banner{font-size:12px;text-align:center;line-height:1.6;margin-top:14px}
 #vault-profiles{margin:18px 0;border-top:1px solid #c99f58;padding-top:8px}
@@ -21,8 +22,27 @@
 #profile-fields{border:0;padding:0;margin:0;min-width:0}
 #profile-form select,#undo-tooth-id{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}
 #tooth-correction{margin-top:12px}
-</style></head><body><main class="panel">
-<div class="lock" aria-hidden="true">🧚‍♀️ 🔐</div><h1>Fairybucks</h1><p class="subtitle">Parent Account Portal</p>
+body{display:block;padding:0}
+.portal-body{max-width:620px;margin:auto}
+.portal-body .notice{background:#fff7df}
+.portal-body .signed{background:none;padding:0}
+.portal-body h2,.portal-body h3{font-family:Georgia,serif;color:var(--emerald)}
+#family-overview>h2,#explorer-title{font-size:clamp(24px,6vw,34px);margin:12px 0}
+#profile-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+#profile-list li{margin:0;padding:16px;text-align:center;background:#fff5d9;border:2px solid #cba058;border-radius:15px}
+#profile-list li::before{content:"🧚";display:block;font-size:29px;margin-bottom:5px}
+.vault-stat{text-align:center;background:#fff5d9;border:2px solid #cba058;border-radius:15px;padding:13px 8px}
+.vault-stat .muted{font:700 clamp(24px,7vw,36px)/1.2 Georgia,serif;color:var(--emerald)}
+#parent-controls{background:#fff0c6;border:3px double #a77c36;border-radius:18px;padding:15px}
+#parent-controls summary{color:var(--emerald);font-weight:700}
+#hand-over-magic,.portal-body button.primary,.portal-body a.cta{background:linear-gradient(#11734b,#003f29);color:#ffefb8;border:2px solid #e4ae47;border-radius:99px;box-shadow:0 3px 0 #a86e2e}
+#treasure-requests-list,#treasure-review-list{list-style:none;padding-left:0}
+#treasure-requests-list .request-row,#treasure-review-list .request-row{padding:10px 0}
+.request-actions{display:flex;gap:6px;flex-wrap:wrap}
+</style></head><body><main class="fairy-page">
+<header class="fairy-header"><a class="nav-button" href="/">← Magical Home</a><h1>🔐 Parent Portal</h1></header>
+<div class="fairy-content portal-body">
+<p class="eyebrow">Fairybucks · Family Vault</p>
 <div class="notice">For grown-ups only. Sign in to open your Family Vault and set up your explorers.</div>
 <div id="message" role="status" aria-live="polite" class="hidden"></div>
 <div id="setup" class="notice" hidden>Account sign-in isn't connected yet. Enter the public Supabase publishable key in <code>auth-config.js</code> after reviewing this change. Do not use a secret key.</div>
@@ -86,7 +106,7 @@
 <details><summary>Tooth history</summary><ul id="tooth-history" class="vault-history"></ul></details>
 </div>
 <a id="explorer-shop" class="cta" href="/#shop">Explore Treasures</a>
-<section id="treasure-request-area" aria-labelledby="treasure-requests-title">
+<section id="treasure-request-area" class="fairy-panel" aria-labelledby="treasure-requests-title">
 <h3 id="treasure-requests-title">📦 Treasure requests</h3>
 <p id="treasure-request-status" role="status" class="muted"></p>
 <button type="button" id="treasure-retry" hidden>Reload requests</button>
@@ -131,10 +151,11 @@
 </div>
 <p id="handoff-status" role="status" class="muted"></p>
 </details>
-<div class="vault-message"><h3>🪄 Fairy Message</h3><p>Wonderful treasures and magical adventures await!</p></div>
+
 </section>
 </section>
-<p class="links"><a href="/">← Magical Home</a><a id="portal-shop" href="/#shop">Explore Treasures</a></p><p class="footer">A Little Magic, A Lot of Treasure ✨</p>
+<p class="links"><a id="portal-shop" href="/#shop">Explore Treasures</a></p><p class="footer">A Little Magic, A Lot of Treasure ✨</p>
+</div>
 </main>
 <script src="/auth-config.js"></script>
 <script type="module">
