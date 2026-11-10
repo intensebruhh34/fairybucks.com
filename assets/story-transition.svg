@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 57">
+  <defs>
+    <radialGradient id="glow">
+      <stop stop-color="#ffdc68" stop-opacity=".55"/>
+      <stop offset=".3" stop-color="#f4bb39" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#f4bb39" stop-opacity="0"/>
+    </radialGradient>
+    <g id="mote">
+      <circle r="6" fill="url(#glow)"/>
+      <circle r="1" fill="#ffe8a0"/>
+    </g>
+    <g id="spark">
+      <circle r="12" fill="url(#glow)"/>
+      <path fill="#ffe9a3" d="M0-5 .7-.7 4 0 .7.7 0 5-.7.7-4 0-.7-.7Z"/>
+    </g>
+  </defs>
+  <g opacity=".65">
+    <use href="#mote" transform="translate(79 12) scale(.7)"/>
+    <use href="#spark" transform="translate(131 30) scale(.9)"/>
+    <use href="#mote" transform="translate(183 43) scale(.7)"/>
+    <use href="#mote" transform="translate(318 17) scale(.75)"/>
+    <use href="#spark" transform="translate(362 29) scale(.72)"/>
+    <use href="#mote" transform="translate(485 27) scale(.75)"/>
+    <use href="#mote" transform="translate(539 41) scale(.6)"/>
+    <use href="#mote" transform="translate(594 20) scale(.8)"/>
+    <use href="#spark" transform="translate(661 43) scale(.85)"/>
+    <use href="#mote" transform="translate(774 22) scale(.75)"/>
+    <use href="#mote" transform="translate(822 39) scale(.8)"/>
+    <use href="#spark" transform="translate(900 28) scale(.86)"/>
+    <use href="#mote" transform="translate(951 15) scale(.72)"/>
+    <use href="#mote" transform="translate(986 40) scale(.6)"/>
+  </g>
+</svg>
