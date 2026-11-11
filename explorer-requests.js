@@ -15,6 +15,64 @@ export function explorerRequests(getClient, wallet) {
     return button;
   }
 
+  function purchaseDetails(request) {
+    const section = document.createElement("div");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "View purchase details";
+    const detail = document.createElement("div");
+    detail.className = "purchase-details";
+    detail.setAttribute("role", "status");
+    section.append(button, detail);
+    button.addEventListener("click", async () => {
+      const view = active;
+      const token = view && wallet.unlockToken(view.childId);
+      if (!token) return;
+      button.disabled = true;
+      detail.textContent = "Loading purchase details…";
+      try {
+        const { data, error } = await getClient().rpc("fairybucks_parent_purchase", {
+          p_child_id: view.childId, p_request_id: request.id, p_unlock_token: token
+        });
+        if (view !== active || wallet.unlockToken(view.childId) !== token || !section.isConnected) return;
+        if (error) throw error;
+        if (data.status === "unlock_required") {
+          wallet.lock(view.childId);
+          return;
+        }
+        if (data.status !== "available") {
+          detail.textContent = "Purchase details are unavailable for this request.";
+          return;
+        }
+        // Accept only the retailer URL shape used by the protected catalog.
+        if (!/^https:\/\/a\.co\/d\/[A-Za-z0-9]+$/.test(data.url)) throw new Error("Invalid retailer link");
+        const version = document.createElement("p");
+        version.textContent = data.version;
+        const price = document.createElement("p");
+        price.textContent = "Previously listed at " + new Intl.NumberFormat("en-US", {
+          style: "currency", currency: "USD"
+        }).format(data.price_cents / 100) + " (" + data.checked_on + ").";
+        const note = document.createElement("p");
+        note.textContent = "Parent budget guide: 1 FB = $1. Check the selected version, current price, tax and shipping before approving. Approval uses Fairy Bucks only. You place and pay for the order separately; this site does not place orders or track delivery.";
+        const link = document.createElement("a");
+        link.className = "fairy-action";
+        link.textContent = "View product on Amazon";
+        link.href = data.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        detail.replaceChildren(version, price, note, link);
+        button.textContent = "Refresh purchase details";
+      } catch {
+        if (view === active && wallet.unlockToken(view.childId) === token && section.isConnected) {
+          detail.textContent = "Couldn't load purchase details. Try again.";
+        }
+      } finally {
+        button.disabled = false;
+      }
+    });
+    return section;
+  }
+
   function renderList(id, rows, parent = false) {
     const items = rows.map(request => {
       const item = document.createElement("li");
@@ -33,11 +91,14 @@ export function explorerRequests(getClient, wallet) {
         else actions.append(action("Cancel request", request, "cancelled"));
         item.append(actions);
       }
+      if (parent && ["pending", "approved", "fulfilled"].includes(request.status)) {
+        item.append(purchaseDetails(request));
+      }
       return item;
     });
     if (!items.length) {
       const empty = document.createElement("li");
-      empty.textContent = parent ? "No requests waiting for review." : "No treasure requests yet.";
+      empty.textContent = parent ? "No requests to review or purchase." : "No treasure requests yet.";
       items.push(empty);
     }
     $(id).replaceChildren(...items);
@@ -47,7 +108,7 @@ export function explorerRequests(getClient, wallet) {
     const visible = Boolean(active && wallet.unlockToken(active.childId));
     $("treasure-review").hidden = !visible;
     if (visible && active.rows) {
-      renderList("treasure-review-list", active.rows.filter(row => row.status === "pending"), true);
+      renderList("treasure-review-list", active.rows.filter(row => ["pending", "approved", "fulfilled"].includes(row.status)), true);
     } else {
       $("treasure-review-list").replaceChildren();
     }
