@@ -59,6 +59,9 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
       clearTimeout(view.expiry);
       view.token = null;
     }
+    $("reward-form").reset();
+    $("reward-status").textContent = "";
+    if (view) view.rewardReady = false;
     $("pin-form").reset();
     $("pin-submit").disabled = false;
     $("pin-form").hidden = true;
@@ -128,6 +131,7 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
       $("pin-form").hidden = true;
       $("pin-status").textContent = "Parent controls unlocked for up to five minutes.";
       $("tooth-controls").hidden = false;
+      loadReward(view);
       onUnlockChange();
       view.expiry = setTimeout(() => {
         if (view !== active) return;
@@ -141,6 +145,47 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
     } finally {
       if (view === active) $("pin-submit").disabled = false;
     }
+  }
+
+  async function loadReward(view) {
+    const token = view.token;
+    const request = view.rewardRequest = {};
+    view.rewardReady = false;
+    $("record-tooth").disabled = true;
+    $("reward-status").textContent = "Loading family tooth reward…";
+    try {
+      const {data,error} = await getClient().rpc("fairybucks_tooth_reward", {p_child_id:view.childId,p_unlock_token:token});
+      if (view !== active || view.token !== token || view.rewardRequest !== request) return;
+      if (error) throw error;
+      if (data.status === "unlock_required") { resetPin(view); showPin(view,"pin_required"); return; }
+      if (data.status !== "saved") throw new Error("Reward unavailable");
+      $("tooth-reward-amount").value = data.amount;
+      view.rewardReady = true;
+      $("reward-status").textContent = "Current family reward: " + data.amount + " FB per tooth.";
+    } catch { if (view === active && view.token === token) $("reward-status").textContent = "Couldn't load the reward. Try Reload reward setting."; }
+    finally { if (view === active) $("record-tooth").disabled = !view.rewardReady || view.saving; }
+  }
+
+  async function saveReward(event) {
+    event.preventDefault();
+    const view = active;
+    if (!view?.token || view.saving) return;
+    const amount = Number($("tooth-reward-amount").value);
+    if (!Number.isInteger(amount) || amount < 1 || amount > 100) {
+      $("reward-status").textContent = "Choose a whole number from 1 to 100 FB."; return;
+    }
+    if (!window.confirm("Set future tooth rewards to " + amount + " FB for every explorer in your family?")) return;
+    const token = view.token;
+    setSaving(view,true);
+    try {
+      const {data,error} = await getClient().rpc("fairybucks_tooth_reward",{p_child_id:view.childId,p_unlock_token:token,p_amount:amount});
+      if (view !== active || view.token !== token) return;
+      if (error) throw error;
+      if (data.status === "unlock_required") { resetPin(view); showPin(view,"pin_required"); return; }
+      if (data.status !== "saved") throw new Error("Reward not saved");
+      await loadReward(view);
+    } catch { if (view === active && view.token === token) $("reward-status").textContent = "Couldn't confirm the setting. Reload to check, or save again."; }
+    finally { setSaving(view,false); }
   }
 
   function pendingTooth(view) {
@@ -167,7 +212,7 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
 
   async function recordTooth() {
     const view = active;
-    if (!view?.token || view.saving) return;
+    if (!view?.token || view.saving || !view.rewardReady) return;
     setSaving(view, true);
     $("tooth-status").textContent = "Saving tooth and reward…";
     try {
@@ -195,7 +240,7 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
       if (view !== active) return;
       $("tooth-status").textContent = data === "corrected"
         ? "This tooth was already corrected."
-        : "Tooth recorded. 5 Fairy Bucks earned!";
+        : "Tooth recorded. Its Fairy Buck reward is saved in the history.";
       await loadWallet(view);
     } catch {
       if (view === active) $("tooth-status").textContent = "Couldn't confirm the save. Try again to finish this tooth reward.";
@@ -207,7 +252,10 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
   function setSaving(view, saving) {
     view.saving = saving;
     if (view !== active) return;
-    $("record-tooth").disabled = saving;
+    $("reward-save").disabled = saving;
+    $("reward-retry").disabled = saving;
+    $("tooth-reward-amount").disabled = saving;
+    $("record-tooth").disabled = saving || !view.rewardReady;
     $("undo-tooth").disabled = saving;
     $("undo-tooth-id").disabled = saving;
   }
@@ -245,6 +293,8 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
     }
   }
 
+  $("reward-form").addEventListener("submit", saveReward);
+  $("reward-retry").addEventListener("click", () => { if (active?.token && !active.saving) loadReward(active); });
   $("wallet-retry").addEventListener("click", () => { if (active) loadWallet(active); });
   $("parent-controls").addEventListener("toggle", () => {
     if (active && $("parent-controls").open && !active.pinChecked) {
