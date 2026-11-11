@@ -1,6 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { childToken, clearChildToken, readChildRequests, storeChildRequests } from "/child-session.js";
-import { treasureIcon } from "/treasure-catalog.js";
+import { treasureIcon, treasureDescription } from "/treasure-catalog.js";
 
 const $ = id => document.getElementById(id);
 const config = window.FAIRYBUCKS_AUTH_CONFIG;
@@ -110,7 +110,9 @@ function renderCatalog() {
     const detail = document.createElement("p");
     detail.className = "treasure-price";
     detail.textContent = "🪙 " + treasure.price + " FB";
-    body.append(label, title, detail, actionButton("Request Treasure", () => request(treasure), true));
+    const description = document.createElement("p");
+    description.textContent = treasureDescription(treasure.key);
+    body.append(label, title, description, detail, actionButton("Request Treasure", () => request(treasure), true));
     card.append(art, body);
     return card;
   }));
