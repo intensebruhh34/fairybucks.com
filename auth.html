@@ -130,7 +130,14 @@ body{display:block;padding:0}
 <button type="submit" id="pin-submit" class="primary">Unlock</button>
 </form>
 <div id="tooth-controls" hidden>
-<p>Each tooth earns 5 Fairy Bucks.</p>
+<form id="reward-form">
+<label for="tooth-reward-amount">Fairy Bucks per tooth</label>
+<input id="tooth-reward-amount" type="number" min="1" max="100" step="1" required inputmode="numeric">
+<p class="muted">Choose 1–100 FB. Applies to future tooth entries for every explorer in your family. Past rewards stay unchanged.</p>
+<button type="submit" id="reward-save">Save tooth reward</button>
+<button type="button" id="reward-retry">Reload reward setting</button>
+<p id="reward-status" role="status"></p>
+</form>
 <button type="button" class="primary" id="record-tooth">Record a lost tooth</button>
 <details id="tooth-correction" hidden>
 <summary>Correct tooth count</summary>
