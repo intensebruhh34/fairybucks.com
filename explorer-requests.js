@@ -1,3 +1,4 @@
+import { stages, deliveryLabels, deliveryText } from '/delivery-stages.js';
 export function explorerRequests(getClient, wallet) {
   const $ = id => document.getElementById(id);
   const statusLabels = {
@@ -73,6 +74,40 @@ export function explorerRequests(getClient, wallet) {
     return section;
   }
 
+  function deliveryButton(label, request, stage) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.disabled = Boolean(active?.saving);
+    button.addEventListener("click", async () => {
+      const view = active;
+      const token = view && wallet.unlockToken(view.childId);
+      if (!token || view.saving) return;
+      const message = stage === "refunded"
+        ? "Cancel this treasure and return " + request.price + " FB? This does not cancel or refund a retailer order. Handle any retailer cancellation separately."
+        : "Update the child's tracker to: " + deliveryLabels[stage] + "? Only update after confirming the actual order progress. Delivery is updated manually.";
+      if (!window.confirm(message)) return;
+      setSaving(view, true);
+      const status = $("treasure-review-status");
+      status.textContent = "Saving…";
+      try {
+        const {data, error} = await getClient().rpc("fairybucks_update_delivery", {
+          p_child_id:view.childId, p_request_id:request.id, p_stage:stage,
+          p_expected_stage:request.delivery_stage || "workshop", p_unlock_token:token
+        });
+        if (view !== active) return;
+        if (error) throw error;
+        if (data === "unlock_required") { wallet.lock(view.childId); return; }
+        const messages = {saved:"Delivery stage updated.",refunded:"Treasure cancelled. Fairy Bucks returned.",stage_changed:"This order changed in another tab. Review its current stage.",already_completed:"This treasure has already landed.",not_approved:"This request is no longer approved.",invalid_stage:"Refresh and try the next delivery stage."};
+        if (!Object.hasOwn(messages, data)) throw new Error("Unconfirmed update");
+        status.textContent = messages[data];
+        await Promise.all([load(view), wallet.refresh(view.childId)]);
+      } catch { if (view === active) status.textContent = "Couldn't confirm the update. Refresh or retry; credits are protected against duplicates."; }
+      finally { setSaving(view, false); }
+    });
+    return button;
+  }
+
   function renderList(id, rows, parent = false) {
     const items = rows.map(request => {
       const item = document.createElement("li");
@@ -84,6 +119,15 @@ export function explorerRequests(getClient, wallet) {
       badge.textContent = statusLabels[request.status] || request.status;
       line.append(badge);
       item.append(line);
+      const delivery = document.createElement("p");
+      delivery.textContent = deliveryText(request);
+      item.append(delivery);
+      if (parent && request.status === "approved") {
+        const stage = request.delivery_stage || "workshop";
+        const next = stages[stages.indexOf(stage) + 1];
+        if (next) item.append(deliveryButton("Mark: " + deliveryLabels[next], request, next));
+        item.append(deliveryButton("Cancel treasure and return FB", request, "refunded"));
+      }
       if (request.status === "pending") {
         const actions = document.createElement("div");
         actions.className = "request-actions";

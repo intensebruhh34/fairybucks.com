@@ -32,12 +32,14 @@ assert.doesNotMatch(JSON.stringify(catalog), /amazon|a\.co|USD|\$/i);
 console.log('PASS static and database catalogs match; public catalog contains no purchase details');
 await db.exec(readFileSync(root+'/supabase/checks/catalog_parent_purchases.sql','utf8'));
 console.log('PASS rollback checks: prices, valid/wrong/expired unlocks, family isolation, anon denial, child payload, unchanged wallet');
+await db.exec(readFileSync(root+'/supabase/checks/delivery_refunds.sql','utf8'));
+console.log('PASS delivery progression, stale updates, completion, family/PIN checks, duplicate refunds and child tracker');
 // Verify the migration leaves legacy request prices and balances intact.
 await db.exec(`insert into child_profiles(id,family_id,nickname) select '11111111-1111-4111-8111-111111111111',id,'Legacy' from families limit 1;
 insert into fairy_wallets values('11111111-1111-4111-8111-111111111111',42,now());
 insert into treasure_requests values(gen_random_uuid(),'11111111-1111-4111-8111-111111111111',(select id from treasures where shop_key=2),'pending',12,now());`);
 // Reapply only the catalog UPDATE to a request that was captured at the former price.
-const migration=readFileSync(root+'/supabase/migrations/'+files.at(-1),'utf8');
+const migration=readFileSync(root+'/supabase/migrations/'+files.find(f => f.includes('catalog_parent_purchases')),'utf8');
 await db.exec(migration.slice(migration.indexOf('update public.treasures'),migration.indexOf('-- Retailer')));
 assert.equal((await db.query('select price_at_request from treasure_requests')).rows[0].price_at_request,12);
 assert.equal((await db.query('select balance from fairy_wallets')).rows[0].balance,42);
