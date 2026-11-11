@@ -1,0 +1,4 @@
+exclude:
+  - supabase
+  - tests
+  - scripts

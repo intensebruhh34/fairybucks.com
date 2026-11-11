@@ -1,0 +1,45 @@
+import { PGlite } from '@electric-sql/pglite';
+import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
+import { readFileSync, readdirSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const root = new URL('../', import.meta.url).pathname;
+const db=new PGlite({extensions:{pgcrypto}});
+await db.exec(`create role anon; create role authenticated; create schema auth; create schema private; create schema extensions;
+create extension pgcrypto with schema extensions;
+create table auth.users(id uuid primary key);
+create table auth.sessions(id uuid primary key,user_id uuid references auth.users, created_at timestamptz default now());
+create function auth.jwt() returns jsonb language sql as $$select current_setting('request.jwt.claims',true)::jsonb$$;
+create function auth.uid() returns uuid language sql as $$select (auth.jwt()->>'sub')::uuid$$;
+create table public.families(id uuid primary key default gen_random_uuid(),owner_id uuid references auth.users);
+create table public.child_profiles(id uuid primary key default gen_random_uuid(),family_id uuid references families,nickname text);
+create table public.fairy_wallets(child_id uuid primary key references child_profiles,balance int,updated_at timestamptz default now());
+create table public.fairy_transactions(id uuid primary key default gen_random_uuid(),child_id uuid references child_profiles,amount int,description text,created_at timestamptz default now());
+create table public.lost_teeth(id uuid primary key default gen_random_uuid(),child_id uuid references child_profiles,lost_on date,created_at timestamptz default now());
+create table private.parent_pin_security(parent_id uuid primary key references auth.users,pin_hash text,failed_attempts int default 0,locked_until timestamptz,updated_at timestamptz default now());
+create table public.treasures(id uuid primary key default gen_random_uuid(),name text,category text check(category in ('Learning','Creativity','Treasure')),description text,fairy_price int,is_active bool);
+create table public.treasure_requests(id uuid primary key,child_id uuid references child_profiles,treasure_id uuid references treasures,status text,price_at_request int,created_at timestamptz default now());
+grant usage on schema public,auth to authenticated,anon;
+grant execute on function auth.uid(),auth.jwt() to authenticated,anon;
+insert into auth.users values('44a684ee-6e65-4098-80d7-3a21c3e2bcb4'),('0ad4c55a-d913-4ccf-8dca-954bbe8acd94');
+insert into auth.sessions values(gen_random_uuid(),'44a684ee-6e65-4098-80d7-3a21c3e2bcb4',now());
+insert into families(owner_id) select id from auth.users;`);
+const files=readdirSync(root+'/supabase/migrations').sort();
+for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
+const { catalog } = await import('data:text/javascript;base64,' + Buffer.from(readFileSync(root+'/treasure-catalog.js','utf8')).toString('base64'));
+const saved = (await db.query('select shop_key, name, fairy_price, category, description from treasures order by shop_key')).rows;
+assert.deepEqual(saved, catalog.map(t => ({shop_key:t.id,name:t.name,fairy_price:t.price,category:t.category,description:t.description})));
+assert.doesNotMatch(JSON.stringify(catalog), /amazon|a\.co|USD|\$/i);
+console.log('PASS static and database catalogs match; public catalog contains no purchase details');
+await db.exec(readFileSync(root+'/supabase/checks/catalog_parent_purchases.sql','utf8'));
+console.log('PASS rollback checks: prices, valid/wrong/expired unlocks, family isolation, anon denial, child payload, unchanged wallet');
+// Verify the migration leaves legacy request prices and balances intact.
+await db.exec(`insert into child_profiles(id,family_id,nickname) select '11111111-1111-4111-8111-111111111111',id,'Legacy' from families limit 1;
+insert into fairy_wallets values('11111111-1111-4111-8111-111111111111',42,now());
+insert into treasure_requests values(gen_random_uuid(),'11111111-1111-4111-8111-111111111111',(select id from treasures where shop_key=2),'pending',12,now());`);
+// Reapply only the catalog UPDATE to a request that was captured at the former price.
+const migration=readFileSync(root+'/supabase/migrations/'+files.at(-1),'utf8');
+await db.exec(migration.slice(migration.indexOf('update public.treasures'),migration.indexOf('-- Retailer')));
+assert.equal((await db.query('select price_at_request from treasure_requests')).rows[0].price_at_request,12);
+assert.equal((await db.query('select balance from fairy_wallets')).rows[0].balance,42);
+console.log('PASS existing request cost and wallet unchanged by catalog update');
+await db.close();

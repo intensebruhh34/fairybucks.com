@@ -11,9 +11,9 @@ function showTreasure(treasure) {
   $("treasure-emoji").textContent = treasure.emoji;
   $("treasure-title").textContent = treasure.name;
   $("treasure-price").textContent = "🪙 " + treasure.price + " Fairy Bucks";
-  $("treasure-message").textContent = explorer
+  $("treasure-message").textContent = treasure.description + " " + (explorer
     ? "Ask a grown-up to review your treasure request."
-    : "Ask a grown-up to open your Fairy Vault.";
+    : "Ask a grown-up to open your Fairy Vault.");
   $("treasure-next").textContent = explorer ? "✨ Request Treasure" : "Open the Family Vault";
   $("treasure-next").href = explorer
     ? "/auth.html#explorer=" + explorer + "&treasure=" + treasure.id : "/auth.html";
@@ -40,7 +40,9 @@ function productCard(treasure) {
   button.className = "fairy-action block";
   button.textContent = "View Treasure";
   button.addEventListener("click", () => showTreasure(treasure));
-  body.append(category, title, price, button);
+  const description = document.createElement("p");
+  description.textContent = treasure.description;
+  body.append(category, title, description, price, button);
   card.append(art, body);
   return card;
 }
