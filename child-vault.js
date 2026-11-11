@@ -1,3 +1,4 @@
+import { deliveryText } from '/delivery-stages.js';
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { childToken, clearChildToken, readChildRequests, storeChildRequests } from "/child-session.js";
 import { treasureIcon, treasureDescription } from "/treasure-catalog.js";
@@ -69,6 +70,9 @@ function render(vault) {
     badge.textContent = statusLabels[request.status] || request.status;
     detail.append(badge);
     item.append(detail);
+    const delivery = document.createElement("p");
+    delivery.textContent = deliveryText(request);
+    item.append(delivery);
     if (request.status === "pending") {
       item.append(actionButton("Cancel request", () => cancel(request)));
     }
