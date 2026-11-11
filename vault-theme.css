@@ -67,3 +67,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .fairy-header h1 { flex-basis: 110px; }
   .treasure-body { padding: 9px; }
 }
+
+.purchase-details:not(:empty){margin:12px 0;padding:14px;border:1px solid #cfb76e;border-radius:12px;background:#fff9e9;overflow-wrap:anywhere}
+.purchase-details p{margin:0 0 12px}
+.purchase-details .fairy-action{display:inline-block}
