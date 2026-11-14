@@ -1,7 +1,8 @@
 // Public contact settings. Never put credentials, private addresses or secret keys here.
-// Keep blank until the operator confirms a monitored inbox and public contact details.
+// Email-only public contact is intentional for the draft. Do not invent or publish personal details.
 export const siteContact = Object.freeze({
  supportEmail: 'support@fairybucks.com',
+ privacyNoticeReviewed: false,
  operatorName: '',
  mailingAddress: '',
  phone: ''
@@ -18,9 +19,9 @@ export function renderContact(root = document) {
   } else el.textContent = 'During the invite-only pilot, contact the person who invited you. A dedicated support inbox has not been configured yet.';
  }
  for (const [key,value] of Object.entries(siteContact)) {
-  for (const el of root.querySelectorAll('[data-contact="'+key+'"]')) el.textContent = value || 'Not configured — operator review required';
+  for (const el of root.querySelectorAll('[data-contact="'+key+'"]')) el.textContent = value || '';
  }
  for (const el of root.querySelectorAll('[data-support-incomplete]')) el.hidden = Boolean(supportEmail);
- const complete = Boolean(supportEmail && siteContact.operatorName && siteContact.mailingAddress && siteContact.phone);
- for (const el of root.querySelectorAll('[data-contact-incomplete]')) el.hidden = complete;
+ for (const el of root.querySelectorAll('[data-contact-field]')) el.hidden = !siteContact[el.getAttribute('data-contact-field')];
+ for (const el of root.querySelectorAll('[data-privacy-draft]')) el.hidden = siteContact.privacyNoticeReviewed;
 }
