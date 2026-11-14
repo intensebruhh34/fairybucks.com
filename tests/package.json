@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node catalog.mjs && node parent-guide.mjs"
+    "test": "node catalog.mjs && node parent-guide.mjs && node mobile-print.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.16"

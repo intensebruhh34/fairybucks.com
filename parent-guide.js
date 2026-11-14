@@ -48,13 +48,27 @@ export function parentGuide(getClient, onReady) {
  function render() {
   $("printable-links").replaceChildren(...printableSheets.map(sheet => {
    const item = document.createElement("li");
-   const link = document.createElement("a");
-   link.textContent = sheet.label;
-   link.href = "/printables/fairy-bucks-" + sheet.key + ".pdf";
-   link.download = "fairy-bucks-" + sheet.key + ".pdf";
-   link.target = "_blank";
-   link.rel = "noopener noreferrer";
-   item.append(link); return item;
+   const name = document.createElement("strong");
+   name.textContent = sheet.label.replace(" (PDF)", "");
+   const actions = document.createElement("div");
+   actions.className = "printable-actions";
+   const open = document.createElement("a");
+   open.textContent = "Open PDF to print";
+   open.className = "fairy-action";
+   open.href = "/printables/fairy-bucks-" + sheet.key + ".pdf";
+   open.target = "_blank";
+   open.rel = "noopener noreferrer";
+   open.setAttribute("aria-label", "Open " + name.textContent + " PDF to print");
+   const download = document.createElement("a");
+   download.textContent = "Download PDF";
+   download.className = "fairy-action ghost";
+   download.href = open.href;
+   download.download = "fairy-bucks-" + sheet.key + ".pdf";
+   download.target = "_blank";
+   download.rel = "noopener noreferrer";
+   download.setAttribute("aria-label", "Download " + name.textContent + " PDF");
+   actions.append(open, download);
+   item.append(name, actions); return item;
   }));
   $("welcome-copy").replaceChildren(...welcome.map(([title,copy]) => {
    const section = document.createElement("section");
