@@ -1,0 +1,13 @@
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const root=new URL('../',import.meta.url);
+const source=readFileSync(new URL('parent-guide.js',root),'utf8');
+const html=readFileSync(new URL('auth.html',root),'utf8');
+assert.match(source,/open.textContent = "Open PDF to print"/);
+assert.doesNotMatch(source,/open.download\s*=/);
+assert.match(source,/download.download = "fairy-bucks-"/);
+assert.match(source,/download.href = open.href/);
+assert.match(html,/Phone printing help/);
+assert.match(html,/iPhone \/ iPad/);
+assert.match(html,/Android/);
+console.log('PASS distinct open/print and download paths plus phone help');
