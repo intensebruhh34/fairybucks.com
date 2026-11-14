@@ -58,6 +58,17 @@ body{display:block;padding:0}
 <form class="screen" id="forgot" hidden><label for="forgot-email">Your parent email</label><input id="forgot-email" type="email" autocomplete="email" required maxlength="254"><button class="primary" type="submit">Email me a reset link</button></form>
 </div>
 <form id="new-password" hidden><h2 id="password-title">Set your parent password</h2><p class="muted">Only enter a password after opening a valid account invitation or recovery link.</p><label for="password-new">New password (12+ characters)</label><input id="password-new" type="password" autocomplete="new-password" minlength="12" required><label for="password-confirm">Confirm password</label><input id="password-confirm" type="password" autocomplete="new-password" minlength="12" required><button class="primary" type="submit">Save password</button></form>
+<section id="parent-help" hidden aria-label="Parent guide and help">
+<p><button type="button" id="welcome-open">Welcome guide</button> <button type="button" id="guide-logout">Sign out</button> <a href="#parent-faq">Parent FAQ</a></p>
+<section id="welcome-panel" class="fairy-panel" aria-labelledby="welcome-title">
+<h2 id="welcome-title" tabindex="-1">Your family's magical beginning</h2>
+<div id="welcome-copy"></div>
+<p id="welcome-status" role="status" aria-live="polite"></p>
+<button type="button" id="welcome-continue" class="primary">Let's open your Family Vault</button>
+<button type="button" id="welcome-retry" hidden>Try again</button>
+</section>
+<details id="parent-faq" class="fairy-panel"><summary>Parent FAQ</summary><div id="faq-copy"></div></details>
+</section>
 <section id="signed-in" class="signed" hidden>
 <div id="family-overview">
 <h2>Family Vault</h2><p id="signed-email" class="muted"></p>
@@ -167,6 +178,7 @@ body{display:block;padding:0}
 <script src="/auth-config.js"></script>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { parentGuide } from "/parent-guide.js";
 import { explorerWallet } from "/explorer-wallet.js";
 import { explorerRequests } from "/explorer-requests.js";
 import { childToken, storeChildToken } from "/child-session.js";
@@ -178,6 +190,12 @@ const target=origin+"/auth.html";
 let client=null, familyView=null;
 const wallet=explorerWallet(()=>client,()=>requests.renderReview());
 const requests=explorerRequests(()=>client,wallet);
+const guide=parentGuide(()=>client,ownerId=>{
+ if(familyView?.ownerId!==ownerId)return;
+ familyView.guideReady=true;
+ $("signed-in").hidden=false;
+ loadFamily(familyView);
+});
 function redirectChildSession(){
  if(!childToken())return false;
  hideFamily();
@@ -185,10 +203,10 @@ function redirectChildSession(){
  return true;
 }
 function explorerHash(){
- return location.hash.match(/^#explorer=[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}(?:&treasure=(?:[1-9]|1[0-2]))?$/i)?.[0]||"";
+ return location.hash.match(/^#explorer=[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}(?:&treasure=(?:[1-9]\d*))?$/i)?.[0]||"";
 }
 function showExplorer(view){
- if(view!==familyView || !view?.profiles)return;
+ if(view!==familyView || !view?.guideReady || !view?.profiles)return;
  const hash=explorerHash();
  const route=new URLSearchParams(hash.slice(1));
  const profile=view.profiles.find(({id})=>route.get("explorer")===id);
@@ -207,6 +225,7 @@ function showExplorer(view){
  }
 }
 function hideFamily(){
+ guide.clear();
  familyView=null;
  wallet.open();
  requests.open();
@@ -236,11 +255,11 @@ function signed(user){
  hideFamily();
  $("auth-area").hidden=true;
  $("new-password").hidden=true;
- $("signed-in").hidden=false;
+ $("signed-in").hidden=true;
  $("signed-email").textContent=user.email||"Signed in";
  $("loading").hidden=true;
  familyView={ownerId:user.id};
- loadFamily(familyView);
+ guide.open(user.id);
 }
 function newPassword(invite){$("auth-area").hidden=true;hideFamily();$("new-password").hidden=false;$("password-title").textContent=invite?"Accept your invitation":"Choose a new password";$("loading").hidden=true;}
 async function loadFamily(view, create=false){
@@ -414,6 +433,9 @@ async function submit(form,operation){
  try{await operation();}catch(e){message(e.message||"Something went wrong.","error");}finally{btn.disabled=false;}
 }
 for(const b of document.querySelectorAll("[data-tab]"))b.addEventListener("click",()=>{message("");tab(b.dataset.tab);});
+document.querySelector('a[href="#parent-faq"]').addEventListener("click",event=>{
+ event.preventDefault(); $("parent-faq").open=true; $("parent-faq").scrollIntoView({behavior:"smooth",block:"start"});
+});
 $("signup").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.signUp({email:$("signup-email").value.trim(),password:$("signup-password").value,options:{emailRedirectTo:target}});if(error)throw error;message("Check your email for a confirmation link. If an account already exists, use Log in or Reset password.","ok");});});
 $("login").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {data,error}=await client.auth.signInWithPassword({email:$("login-email").value.trim(),password:$("login-password").value});if(error)throw error;signed(data.user);message("Signed in successfully.","ok");});});
 $("forgot").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.resetPasswordForEmail($("forgot-email").value.trim(),{redirectTo:target});if(error)throw error;message("If that email has an account, you'll receive a reset link.","ok");});});
@@ -425,6 +447,8 @@ $("add-profile").addEventListener("submit",saveProfile);
 window.addEventListener("hashchange",()=>showExplorer(familyView));
 window.addEventListener("pageshow",event=>{if(event.persisted)redirectChildSession();});
 $("hand-over-magic").addEventListener("click",handOverMagic);
-$("logout").addEventListener("click",async()=>{if(!client)return;const {error}=await client.auth.signOut();if(error)message(error.message,"error");else{history.replaceState(null,"",location.pathname);tab("login");message("Signed out.","ok");}});
+async function signOutParent(){if(!client)return;const {error}=await client.auth.signOut();if(error)message(error.message,"error");else{history.replaceState(null,"",location.pathname);tab("login");message("Signed out.","ok");}}
+$("logout").addEventListener("click",signOutParent);
+$("guide-logout").addEventListener("click",signOutParent);
 initialize().catch(e=>{$("loading").hidden=true;$("setup").hidden=false;message("Couldn't start sign-in: "+e.message,"error");});
 </script></body></html>
