@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url).pathname;
 const db=new PGlite({extensions:{pgcrypto}});
 await db.exec(`create role anon; create role authenticated; create schema auth; create schema private; create schema extensions;
 create extension pgcrypto with schema extensions;
-create table auth.users(id uuid primary key);
+create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
 create table auth.sessions(id uuid primary key,user_id uuid references auth.users, created_at timestamptz default now());
 create function auth.jwt() returns jsonb language sql as $$select current_setting('request.jwt.claims',true)::jsonb$$;
 create function auth.uid() returns uuid language sql as $$select (auth.jwt()->>'sub')::uuid$$;
@@ -20,9 +20,10 @@ create table public.treasures(id uuid primary key default gen_random_uuid(),name
 create table public.treasure_requests(id uuid primary key,child_id uuid references child_profiles,treasure_id uuid references treasures,status text,price_at_request int,created_at timestamptz default now());
 grant usage on schema public,auth to authenticated,anon;
 grant execute on function auth.uid(),auth.jwt() to authenticated,anon;
-insert into auth.users values('44a684ee-6e65-4098-80d7-3a21c3e2bcb4'),('0ad4c55a-d913-4ccf-8dca-954bbe8acd94');
+insert into auth.users(id) values('44a684ee-6e65-4098-80d7-3a21c3e2bcb4'),('0ad4c55a-d913-4ccf-8dca-954bbe8acd94');
 insert into auth.sessions values(gen_random_uuid(),'44a684ee-6e65-4098-80d7-3a21c3e2bcb4',now());
-insert into families(owner_id) select id from auth.users;`);
+insert into families(owner_id) select id from auth.users;
+update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`);
 const files=readdirSync(root+'/supabase/migrations').sort();
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
 const { catalog } = await import('data:text/javascript;base64,' + Buffer.from(readFileSync(root+'/treasure-catalog.js','utf8')).toString('base64'));
@@ -40,6 +41,8 @@ await db.exec(readFileSync(root+'/supabase/checks/hot_wheels_barbie.sql','utf8')
 console.log('PASS new treasure mappings and protected purchase access');
 await db.exec(readFileSync(root+'/supabase/checks/parent_welcome_guide.sql','utf8'));
 console.log('PASS welcome completion, persistence, isolation and session checks');
+await db.exec(readFileSync(root+'/supabase/checks/parent_pin_recovery.sql','utf8'));
+console.log('PASS email PIN recovery, single-use proofs, isolation and revocation');
 // Verify the migration leaves legacy request prices and balances intact.
 await db.exec(`insert into child_profiles(id,family_id,nickname) select '11111111-1111-4111-8111-111111111111',id,'Legacy' from families limit 1;
 insert into fairy_wallets values('11111111-1111-4111-8111-111111111111',42,now());
