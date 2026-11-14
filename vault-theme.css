@@ -71,3 +71,8 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .purchase-details:not(:empty){margin:12px 0;padding:14px;border:1px solid #cfb76e;border-radius:12px;background:#fff9e9;overflow-wrap:anywhere}
 .purchase-details p{margin:0 0 12px}
 .purchase-details .fairy-action{display:inline-block}
+
+#printable-links{list-style:none;padding:0}
+#printable-links li{margin:16px 0;padding-bottom:16px;border-bottom:1px solid #cfb76e}
+.printable-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.printable-actions a{display:inline-block;min-height:44px;box-sizing:border-box;text-decoration:none}
