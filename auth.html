@@ -58,7 +58,25 @@ body{display:block;padding:0}
 <form class="screen" id="forgot" hidden><label for="forgot-email">Your parent email</label><input id="forgot-email" type="email" autocomplete="email" required maxlength="254"><button class="primary" type="submit">Email me a reset link</button></form>
 </div>
 <form id="new-password" hidden><h2 id="password-title">Set your parent password</h2><p class="muted">Only enter a password after opening a valid account invitation or recovery link.</p><label for="password-new">New password (12+ characters)</label><input id="password-new" type="password" autocomplete="new-password" minlength="12" required><label for="password-confirm">Confirm password</label><input id="password-confirm" type="password" autocomplete="new-password" minlength="12" required><button class="primary" type="submit">Save password</button></form>
+<section id="pin-recovery-panel" class="fairy-panel" hidden aria-labelledby="pin-recovery-title">
+<h2 id="pin-recovery-title" tabindex="-1">Reset your Parent PIN</h2>
+<p>Verify your parent email to choose a new PIN. Your account password stays the same.</p>
+<p id="pin-recovery-email"></p>
+<p id="pin-recovery-status" role="status" aria-live="polite"></p>
+<button type="button" id="pin-recovery-send" class="primary" hidden>Email me a PIN recovery link</button>
+<button type="button" id="pin-recovery-retry" hidden>Try again</button>
+<form id="pin-recovery-form" hidden>
+<label for="pin-recovery-new">New six-digit Parent PIN</label>
+<input id="pin-recovery-new" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required>
+<label for="pin-recovery-confirm">Confirm new Parent PIN</label>
+<input id="pin-recovery-confirm" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required>
+<p>Saving ends existing parent unlocks and child vault sessions. Unlock again with your new PIN, then use Hand Over the Magic to reopen a child's vault. Balances, teeth and requests stay unchanged.</p>
+<button type="submit" id="pin-recovery-save" class="primary">Save new Parent PIN</button>
+</form>
+<p><button type="button" id="pin-recovery-back">Return to Parent Portal</button></p>
+</section>
 <section id="parent-help" hidden aria-label="Parent guide and help">
+<p><button type="button" id="pin-recovery-open">Reset Parent PIN</button></p>
 <p><button type="button" id="welcome-open">Welcome guide</button> <button type="button" id="guide-logout">Sign out</button> <a href="#parent-faq">Parent FAQ</a> <a href="#print-fairy-bucks">Print Fairy Bucks</a></p>
 <section id="welcome-panel" class="fairy-panel" aria-labelledby="welcome-title">
 <h2 id="welcome-title" tabindex="-1">Your family's magical beginning</h2>
@@ -143,6 +161,7 @@ body{display:block;padding:0}
 </section>
 <details id="parent-controls">
 <summary>🔐 Parent controls</summary>
+<button type="button" id="pin-forgot">Forgot Parent PIN?</button>
 <p id="pin-status" role="status" class="muted"></p>
 <button type="button" id="pin-retry" hidden>Check PIN status</button>
 <form id="pin-form" hidden>
@@ -192,10 +211,11 @@ body{display:block;padding:0}
 <script src="/auth-config.js"></script>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { parentPinRecovery } from "/parent-pin-recovery.js";
 import { parentGuide } from "/parent-guide.js";
 import { explorerWallet } from "/explorer-wallet.js";
 import { explorerRequests } from "/explorer-requests.js";
-import { childToken, storeChildToken } from "/child-session.js";
+import { childToken, storeChildToken, clearChildToken } from "/child-session.js";
 const cfg=window.FAIRYBUCKS_AUTH_CONFIG;
 const $=id=>document.getElementById(id);
 const message=(text,kind="")=>{const n=$("message");n.className="notice "+kind;n.textContent=text;};
@@ -210,6 +230,14 @@ const guide=parentGuide(()=>client,ownerId=>{
  $("signed-in").hidden=false;
  loadFamily(familyView);
 });
+const pinRecovery=parentPinRecovery(()=>client,target,()=>{
+ hideFamily(); message(""); $("auth-area").hidden=true; $("new-password").hidden=true; $("loading").hidden=true;
+},(user,saved)=>{
+ if(user)signed(user); else tab("login");
+ message(saved?"Parent PIN reset. Unlock Parent controls with your new PIN.":"",saved?"ok":"");
+});
+$("pin-recovery-open").addEventListener("click",()=>pinRecovery.open());
+$("pin-forgot").addEventListener("click",()=>pinRecovery.open());
 function redirectChildSession(){
  if(!childToken())return false;
  hideFamily();
@@ -239,6 +267,7 @@ function showExplorer(view){
  }
 }
 function hideFamily(){
+ pinRecovery.clear();
  guide.clear();
  familyView=null;
  wallet.open();
@@ -379,14 +408,15 @@ async function saveProfile(event){
  }
 }
 async function initialize(){
- if(redirectChildSession())return;
  if(!cfg?.url||!/^sb_publishable_/.test(cfg.publishableKey||"")){$("loading").hidden=true;$("setup").hidden=false;return;}
- client=createClient(cfg.url,cfg.publishableKey,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
  const params=new URLSearchParams(location.hash.slice(1));
  const search=new URLSearchParams(location.search);
  const type=params.get("type")||search.get("type")||"";
  const hasTokens=params.has("access_token")||search.has("code")||search.has("token_hash");
+ if(!hasTokens && redirectChildSession())return;
+ client=createClient(cfg.url,cfg.publishableKey,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
  client.auth.onAuthStateChange((evt,session)=>{
+  if(pinRecovery.accountChanged(session?.user?.id))tab("login");
   if(evt==="PASSWORD_RECOVERY")newPassword(false);
   if(evt==="SIGNED_OUT" || (familyView && session?.user.id!==familyView.ownerId))tab("login");
  });
@@ -400,11 +430,17 @@ async function initialize(){
    if(error){const {data}=await client.auth.getSession();if(!data.session)throw error;}
   }
   const {data,error}=await client.auth.getSession();if(error)throw error;
+  if(hasTokens && data.session?.user){try{clearChildToken();}catch{ /* Storage may be disabled. */ }}
   history.replaceState(null,"",location.pathname+(hasTokens?"":explorerHash()));
   $("loading").hidden=true;
   if(type==="recovery" && data.session){newPassword(false);}
   else if(type==="invite" && data.session){newPassword(true);}
-  else if(data.session?.user && hasTokens && !type){newPassword(true);}
+  else if(data.session?.user && (type==="magiclink" || type==="email")){await pinRecovery.open();}
+  else if(data.session?.user && hasTokens && !type){
+   const proof=await client.rpc("fairybucks_recover_parent_pin");
+   if(!proof.error && proof.data?.status==="ready")await pinRecovery.open();
+   else newPassword(true);
+  }
   else if(data.session?.user)signed(data.session.user);
   else {tab("login");if(hasTokens)message("This link expired or could not be verified. Request a new invitation or reset link.","error");}
  }catch(e){$("loading").hidden=true;tab("login");message(e.message||"Could not complete the email link. Please request a new one.","error");history.replaceState(null,"",location.pathname);}
