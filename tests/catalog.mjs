@@ -36,6 +36,8 @@ await db.exec(readFileSync(root+'/supabase/checks/delivery_refunds.sql','utf8'))
 console.log('PASS delivery progression, stale updates, completion, family/PIN checks, duplicate refunds and child tracker');
 await db.exec(readFileSync(root+'/supabase/checks/adjustable_tooth_rewards.sql','utf8'));
 console.log('PASS adjustable rewards, original corrections, replay and access checks');
+await db.exec(readFileSync(root+'/supabase/checks/hot_wheels_barbie.sql','utf8'));
+console.log('PASS new treasure mappings and protected purchase access');
 // Verify the migration leaves legacy request prices and balances intact.
 await db.exec(`insert into child_profiles(id,family_id,nickname) select '11111111-1111-4111-8111-111111111111',id,'Legacy' from families limit 1;
 insert into fairy_wallets values('11111111-1111-4111-8111-111111111111',42,now());

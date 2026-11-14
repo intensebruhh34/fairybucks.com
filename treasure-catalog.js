@@ -94,6 +94,22 @@ export const catalog = [
     "emoji": "🌈",
     "category": "Creativity",
     "description": "Shape your own creations with 32 colors of air-dry clay and three sculpting tools."
+  },
+  {
+    "id": 13,
+    "name": "Hot Wheels Ferrari Five-Pack",
+    "price": 14,
+    "emoji": "🏎️",
+    "category": "Treasure",
+    "description": "Race and display five 1:64 scale Ferrari toy cars. Listed for ages 3+."
+  },
+  {
+    "id": 14,
+    "name": "Barbie Pink Paisley Doll",
+    "price": 11,
+    "emoji": "🎀",
+    "category": "Treasure",
+    "description": "Create your own adventures with Barbie Fashionistas #249, wearing a pink paisley outfit and white platform sandals. Listed for ages 3+."
   }
 ];
 
