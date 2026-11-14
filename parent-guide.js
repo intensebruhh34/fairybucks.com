@@ -21,6 +21,14 @@ export const faqs = [
  ["Can I read the welcome guide again?", "Yes. Select Welcome guide in this Parent Portal. Reading it again does not change your rewards, wallet balances or profiles."]
 ];
 
+export const printableSheets = [
+ {key:"1",label:"1 Fairy Buck sheet (PDF)"},
+ {key:"2",label:"2 Fairy Bucks sheet (PDF)"},
+ {key:"5",label:"5 Fairy Bucks sheet (PDF)"},
+ {key:"10",label:"10 Fairy Bucks sheet (PDF)"},
+ {key:"mixed",label:"Mixed starter sheet (PDF)"}
+];
+
 export function parentGuide(getClient, onReady) {
  const $ = id => document.getElementById(id);
  let active = null;
@@ -29,6 +37,8 @@ export function parentGuide(getClient, onReady) {
   $("parent-help").hidden = true;
   $("welcome-copy").replaceChildren();
   $("faq-copy").replaceChildren();
+  $("printable-links").replaceChildren();
+  $("print-fairy-bucks").open = false;
   $("welcome-status").textContent = "";
  }
  function showGuide() {
@@ -36,6 +46,16 @@ export function parentGuide(getClient, onReady) {
   $("welcome-title").focus();
  }
  function render() {
+  $("printable-links").replaceChildren(...printableSheets.map(sheet => {
+   const item = document.createElement("li");
+   const link = document.createElement("a");
+   link.textContent = sheet.label;
+   link.href = "/printables/fairy-bucks-" + sheet.key + ".pdf";
+   link.download = "fairy-bucks-" + sheet.key + ".pdf";
+   link.target = "_blank";
+   link.rel = "noopener noreferrer";
+   item.append(link); return item;
+  }));
   $("welcome-copy").replaceChildren(...welcome.map(([title,copy]) => {
    const section = document.createElement("section");
    const h = document.createElement("h3"); h.textContent = title;

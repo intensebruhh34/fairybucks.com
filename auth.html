@@ -59,7 +59,7 @@ body{display:block;padding:0}
 </div>
 <form id="new-password" hidden><h2 id="password-title">Set your parent password</h2><p class="muted">Only enter a password after opening a valid account invitation or recovery link.</p><label for="password-new">New password (12+ characters)</label><input id="password-new" type="password" autocomplete="new-password" minlength="12" required><label for="password-confirm">Confirm password</label><input id="password-confirm" type="password" autocomplete="new-password" minlength="12" required><button class="primary" type="submit">Save password</button></form>
 <section id="parent-help" hidden aria-label="Parent guide and help">
-<p><button type="button" id="welcome-open">Welcome guide</button> <button type="button" id="guide-logout">Sign out</button> <a href="#parent-faq">Parent FAQ</a></p>
+<p><button type="button" id="welcome-open">Welcome guide</button> <button type="button" id="guide-logout">Sign out</button> <a href="#parent-faq">Parent FAQ</a> <a href="#print-fairy-bucks">Print Fairy Bucks</a></p>
 <section id="welcome-panel" class="fairy-panel" aria-labelledby="welcome-title">
 <h2 id="welcome-title" tabindex="-1">Your family's magical beginning</h2>
 <div id="welcome-copy"></div>
@@ -67,6 +67,13 @@ body{display:block;padding:0}
 <button type="button" id="welcome-continue" class="primary">Let's open your Family Vault</button>
 <button type="button" id="welcome-retry" hidden>Try again</button>
 </section>
+<details id="print-fairy-bucks" class="fairy-panel">
+<summary>Print Fairy Bucks</summary>
+<p>Choose just the denomination you need, or download the mixed starter sheet. Each PDF has four notes on one letter-size page.</p>
+<ul id="printable-links"></ul>
+<p>Print single-sided at <strong>100% / Actual size</strong> on letter-size paper. Cut along the dashed guides outside the notes. These sheets contain fronts only.</p>
+<p><strong>Printing Fairy Bucks does not change your child's vault balance.</strong> Record the tooth reward separately in Parent controls. The paper represents that recorded reward; it is not an extra reward.</p>
+</details>
 <details id="parent-faq" class="fairy-panel"><summary>Parent FAQ</summary><div id="faq-copy"></div></details>
 </section>
 <section id="signed-in" class="signed" hidden>
@@ -433,9 +440,11 @@ async function submit(form,operation){
  try{await operation();}catch(e){message(e.message||"Something went wrong.","error");}finally{btn.disabled=false;}
 }
 for(const b of document.querySelectorAll("[data-tab]"))b.addEventListener("click",()=>{message("");tab(b.dataset.tab);});
-document.querySelector('a[href="#parent-faq"]').addEventListener("click",event=>{
- event.preventDefault(); $("parent-faq").open=true; $("parent-faq").scrollIntoView({behavior:"smooth",block:"start"});
-});
+for(const id of ["parent-faq","print-fairy-bucks"]){
+ document.querySelector('a[href="#'+id+'"]').addEventListener("click",event=>{
+  event.preventDefault(); $(id).open=true; $(id).scrollIntoView({behavior:"smooth",block:"start"});
+ });
+}
 $("signup").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.signUp({email:$("signup-email").value.trim(),password:$("signup-password").value,options:{emailRedirectTo:target}});if(error)throw error;message("Check your email for a confirmation link. If an account already exists, use Log in or Reset password.","ok");});});
 $("login").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {data,error}=await client.auth.signInWithPassword({email:$("login-email").value.trim(),password:$("login-password").value});if(error)throw error;signed(data.user);message("Signed in successfully.","ok");});});
 $("forgot").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.resetPasswordForEmail($("forgot-email").value.trim(),{redirectTo:target});if(error)throw error;message("If that email has an account, you'll receive a reset link.","ok");});});
