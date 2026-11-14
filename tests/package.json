@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node catalog.mjs && node parent-guide.mjs && node mobile-print.mjs && node pin-recovery.mjs && node pin-recovery-routing.mjs"
+    "test": "node catalog.mjs && node parent-guide.mjs && node mobile-print.mjs && node pin-recovery.mjs && node pin-recovery-routing.mjs && node account-deletion.mjs && node privacy-support.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.16"

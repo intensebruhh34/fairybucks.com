@@ -39,10 +39,12 @@ body{display:block;padding:0}
 #treasure-requests-list,#treasure-review-list{list-style:none;padding-left:0}
 #treasure-requests-list .request-row,#treasure-review-list .request-row{padding:10px 0}
 .request-actions{display:flex;gap:6px;flex-wrap:wrap}
+.danger-action{border:2px solid #9b3b32;background:#fff1ed;color:#8b261d}.danger-action:focus-visible{outline:3px solid #9b3b32}
 </style></head><body><main class="fairy-page">
 <header class="fairy-header"><a class="nav-button" href="/">← Magical Home</a><h1>🔐 Parent Portal</h1></header>
 <div class="fairy-content portal-body">
 <p class="eyebrow">Fairybucks · Family Vault</p>
+<p><a href="/privacy.html">Privacy notice</a> · <a href="/support.html">Parent help</a></p>
 <div class="notice">For grown-ups only. Sign in to open your Family Vault and set up your explorers.</div>
 <div id="message" role="status" aria-live="polite" class="hidden"></div>
 <div id="setup" class="notice" hidden>Account sign-in isn't connected yet. Enter the public Supabase publishable key in <code>auth-config.js</code> after reviewing this change. Do not use a secret key.</div>
@@ -75,8 +77,26 @@ body{display:block;padding:0}
 </form>
 <p><button type="button" id="pin-recovery-back">Return to Parent Portal</button></p>
 </section>
+<section id="account-deletion-panel" class="fairy-panel" hidden aria-labelledby="account-deletion-title">
+<h2 id="account-deletion-title" tabindex="-1">Delete account and family data</h2>
+<p id="account-deletion-email"></p>
+<p id="account-deletion-status" role="status" aria-live="polite"></p>
+<button type="button" id="account-deletion-retry" hidden>Check deletion status again</button>
+<button type="button" id="account-deletion-signout" hidden>Sign out to verify again</button>
+<form id="account-deletion-form" hidden>
+<p><strong>This permanently deletes your parent login and all explorer profiles in this account (currently <span id="account-deletion-count"></span>).</strong></p>
+<ul><li>Family vaults, Fairy Buck balances and transaction history</li><li>Tooth records, treasure requests and delivery history</li><li>Parent PIN, reward settings, guide progress and recovery records</li><li>Parent sign-in sessions and child vault sessions</li></ul>
+<p>This cannot be undone. Other families are unaffected. Deletion does not cancel purchases you arranged separately or remove copies you downloaded, emailed or saved outside the site. Provider logs and backups expire under their retention schedules; see <a href="/privacy.html">Privacy</a>.</p>
+<div id="account-deletion-pin-area"><label for="account-deletion-pin">Current six-digit Parent PIN</label><input id="account-deletion-pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off"></div>
+<label for="account-deletion-confirm">Type DELETE to confirm permanent deletion</label><input id="account-deletion-confirm" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" pattern="DELETE" required>
+<button type="submit" id="account-deletion-submit" class="danger-action">Permanently delete my account and family data</button>
+</form>
+<p><a href="/support.html">Need help or unable to verify your account?</a></p>
+<button type="button" id="account-deletion-back">Keep my account — return to portal</button>
+</section>
 <section id="parent-help" hidden aria-label="Parent guide and help">
 <p><button type="button" id="pin-recovery-open">Reset Parent PIN</button></p>
+<details class="fairy-panel"><summary>Account, privacy and support</summary><p data-support-email><a href="mailto:support@fairybucks.com">support@fairybucks.com</a></p><p><a href="/support.html">Parent help</a> · <a href="/privacy.html">Privacy notice</a></p><button type="button" id="account-deletion-open">Delete account and family data</button></details>
 <p><button type="button" id="welcome-open">Welcome guide</button> <button type="button" id="guide-logout">Sign out</button> <a href="#parent-faq">Parent FAQ</a> <a href="#print-fairy-bucks">Print Fairy Bucks</a></p>
 <section id="welcome-panel" class="fairy-panel" aria-labelledby="welcome-title">
 <h2 id="welcome-title" tabindex="-1">Your family's magical beginning</h2>
@@ -117,6 +137,7 @@ body{display:block;padding:0}
 <summary>Add an explorer</summary>
 <form id="add-profile">
 <fieldset id="profile-fields">
+<p class="muted">Use a nickname rather than a full name. Age and gender are optional. <a href="/privacy.html">How family information is used</a>.</p>
 <label for="profile-name">First name or nickname</label>
 <input id="profile-name" maxlength="35" autocomplete="off" required>
 <label for="profile-age">Age (optional, 2–18)</label>
@@ -211,14 +232,17 @@ body{display:block;padding:0}
 <script src="/auth-config.js"></script>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { accountDeletion } from "/account-deletion.js";
+import { renderContact } from "/site-contact.js";
 import { parentPinRecovery } from "/parent-pin-recovery.js";
 import { parentGuide } from "/parent-guide.js";
 import { explorerWallet } from "/explorer-wallet.js";
 import { explorerRequests } from "/explorer-requests.js";
 import { childToken, storeChildToken, clearChildToken } from "/child-session.js";
+renderContact();
 const cfg=window.FAIRYBUCKS_AUTH_CONFIG;
 const $=id=>document.getElementById(id);
-const message=(text,kind="")=>{const n=$("message");n.className="notice "+kind;n.textContent=text;};
+const message=(text,kind="")=>{const n=$("message");n.className=text?"notice "+kind:"hidden";n.textContent=text;};
 const origin=location.origin;
 const target=origin+"/auth.html";
 let client=null, familyView=null;
@@ -238,6 +262,14 @@ const pinRecovery=parentPinRecovery(()=>client,target,()=>{
 });
 $("pin-recovery-open").addEventListener("click",()=>pinRecovery.open());
 $("pin-forgot").addEventListener("click",()=>pinRecovery.open());
+const deletion=accountDeletion(()=>client,()=>{
+ hideFamily(); message(""); $("auth-area").hidden=true; $("new-password").hidden=true; $("loading").hidden=true;
+},()=>{
+ try{clearChildToken();}catch{}
+ history.replaceState(null,"",location.pathname);tab("login");
+ message("Your account and family data were permanently deleted. You are signed out.","ok");
+},user=>{if(user)signed(user);else tab("login");});
+$("account-deletion-open").addEventListener("click",()=>deletion.open());
 function redirectChildSession(){
  if(!childToken())return false;
  hideFamily();
@@ -267,6 +299,7 @@ function showExplorer(view){
  }
 }
 function hideFamily(){
+ deletion.clear();
  pinRecovery.clear();
  guide.clear();
  familyView=null;
@@ -416,6 +449,7 @@ async function initialize(){
  if(!hasTokens && redirectChildSession())return;
  client=createClient(cfg.url,cfg.publishableKey,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
  client.auth.onAuthStateChange((evt,session)=>{
+  if(deletion.accountChanged(session?.user?.id))tab("login");
   if(pinRecovery.accountChanged(session?.user?.id))tab("login");
   if(evt==="PASSWORD_RECOVERY")newPassword(false);
   if(evt==="SIGNED_OUT" || (familyView && session?.user.id!==familyView.ownerId))tab("login");

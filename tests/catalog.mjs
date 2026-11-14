@@ -43,6 +43,8 @@ await db.exec(readFileSync(root+'/supabase/checks/parent_welcome_guide.sql','utf
 console.log('PASS welcome completion, persistence, isolation and session checks');
 await db.exec(readFileSync(root+'/supabase/checks/parent_pin_recovery.sql','utf8'));
 console.log('PASS email PIN recovery, single-use proofs, isolation and revocation');
+await db.exec(readFileSync(root+'/supabase/checks/account_deletion.sql','utf8'));
+console.log('PASS account deletion, PIN/recent-auth checks, atomic cleanup and family isolation');
 // Verify the migration leaves legacy request prices and balances intact.
 await db.exec(`insert into child_profiles(id,family_id,nickname) select '11111111-1111-4111-8111-111111111111',id,'Legacy' from families limit 1;
 insert into fairy_wallets values('11111111-1111-4111-8111-111111111111',42,now());
