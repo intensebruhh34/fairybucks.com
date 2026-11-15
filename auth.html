@@ -40,6 +40,8 @@ body{display:block;padding:0}
 #treasure-requests-list .request-row,#treasure-review-list .request-row{padding:10px 0}
 .request-actions{display:flex;gap:6px;flex-wrap:wrap}
 .danger-action{border:2px solid #9b3b32;background:#fff1ed;color:#8b261d}.danger-action:focus-visible{outline:3px solid #9b3b32}
+#consent-request-form input[type=checkbox]{width:auto;margin-right:8px}
+@media print{body>*{display:none!important}#consent-print{display:block!important;color:#000;background:#fff;font:11pt/1.4 Georgia,serif;padding:0}#consent-print h1{font-size:18pt;color:#000}#consent-print h2{font-size:13pt;break-after:avoid}#consent-print p{orphans:3;widows:3;overflow-wrap:anywhere}@page{size:letter;margin:.6in}}
 </style></head><body><main class="fairy-page">
 <header class="fairy-header"><a class="nav-button" href="/">← Magical Home</a><h1>🔐 Parent Portal</h1></header>
 <div class="fairy-content portal-body">
@@ -104,6 +106,16 @@ body{display:block;padding:0}
 <p id="welcome-status" role="status" aria-live="polite"></p>
 <button type="button" id="welcome-continue" class="primary">Let's open your Family Vault</button>
 <button type="button" id="welcome-retry" hidden>Try again</button>
+</section>
+<section id="parent-consent-panel" class="fairy-panel" hidden aria-labelledby="consent-title">
+<h2 id="consent-title">Parent permission</h2>
+<p id="consent-status" role="status" aria-live="polite"></p>
+<details><summary>Read the parent notice</summary><div id="consent-copy"></div><p><a href="/privacy.html">Full privacy notice</a> · <a href="/support.html">Support and privacy requests</a></p></details>
+<form id="consent-request-form" hidden><label><input type="checkbox" id="consent-guardian" required> I am the parent or legal guardian. I have read the parent notice and Privacy, and want to request verification for the described family-vault use.</label><p>This request does not enable child mode. A returned signed form must be reviewed first.</p><button type="submit" id="consent-request">Request parent-permission verification</button></form>
+<button type="button" id="consent-print-button" hidden>Print parent consent form</button>
+<button type="button" id="consent-refresh">Refresh permission status</button>
+<button type="button" id="consent-withdraw" hidden>Withdraw parent permission</button>
+<p>You can review existing records or use Delete account and family data without granting child-mode permission.</p>
 </section>
 <details id="print-fairy-bucks" class="fairy-panel">
 <summary>Print Fairy Bucks</summary>
@@ -219,6 +231,7 @@ body{display:block;padding:0}
 <p id="treasure-review-status" role="status" class="muted"></p>
 <ul id="treasure-review-list" class="vault-history"></ul>
 </section>
+<p id="permission-handoff-note">Verify Parent permission in the portal before opening child mode.</p>
 <p><button type="button" id="hand-over-magic">🪄 Hand Over the Magic</button></p>
 </div>
 <p id="handoff-status" role="status" class="muted"></p>
@@ -229,9 +242,11 @@ body{display:block;padding:0}
 <p class="links"><a id="portal-shop" href="/#shop">Explore Treasures</a></p><p class="footer">A Little Magic, A Lot of Treasure ✨</p>
 </div>
 </main>
+<section id="consent-print" hidden aria-label="Printable parent consent form"></section>
 <script src="/auth-config.js"></script>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { parentConsent } from "/parent-consent.js";
 import { accountDeletion } from "/account-deletion.js";
 import { renderContact } from "/site-contact.js";
 import { parentPinRecovery } from "/parent-pin-recovery.js";
@@ -251,8 +266,15 @@ const requests=explorerRequests(()=>client,wallet);
 const guide=parentGuide(()=>client,ownerId=>{
  if(familyView?.ownerId!==ownerId)return;
  familyView.guideReady=true;
+ consent.open(ownerId);
  $("signed-in").hidden=false;
  loadFamily(familyView);
+});
+const consent=parentConsent(()=>client,verified=>{
+ if(!familyView)return;
+ familyView.permissionVerified=verified;
+ if(familyView.profiles)$("profile-form").hidden=!verified;
+ $("permission-handoff-note").hidden=verified;
 });
 const pinRecovery=parentPinRecovery(()=>client,target,()=>{
  hideFamily(); message(""); $("auth-area").hidden=true; $("new-password").hidden=true; $("loading").hidden=true;
@@ -299,6 +321,7 @@ function showExplorer(view){
  }
 }
 function hideFamily(){
+ consent.clear();
  deletion.clear();
  pinRecovery.clear();
  guide.clear();
@@ -394,7 +417,7 @@ async function loadProfiles(view){
   });
   $("profile-list").replaceChildren(...explorers);
   $("profile-status").textContent=explorers.length?"":"Your vault is ready. Add your first explorer below.";
-  $("profile-form").hidden=false;
+  $("profile-form").hidden=!view.permissionVerified;
   showExplorer(view);
  }catch{
   if(view!==familyView)return;
@@ -484,6 +507,7 @@ async function handOverMagic(){
  const childId=new URLSearchParams(explorerHash().slice(1)).get("explorer");
  const unlock=wallet.unlockToken(childId);
  const button=$("hand-over-magic");
+ if(!view?.permissionVerified){$("handoff-status").textContent="Review and verify Parent permission before opening child mode.";return;}
  if(!unlock || button.disabled)return;
  if(!window.confirm("Open this explorer’s child vault? This tab will sign out of the parent account. Returning to parent controls requires signing in again."))return;
  button.disabled=true;
