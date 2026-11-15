@@ -15,6 +15,7 @@ async function route(hash,search='',child=false,session=true,proof='ready'){
  window:{FAIRYBUCKS_AUTH_CONFIG:{url:'https://example.test',publishableKey:'sb_publishable_test'},addEventListener(){}},
  location:{origin:'https://example.test',pathname:'/auth.html',hash,search,replace(url){observed.redirect=url;}},
  history:{replaceState(){}},createClient:()=>client,renderContact(){},
+ parentConsent:()=>({clear(){},open(){}}),
  accountDeletion:()=>({clear(){},accountChanged(){return false;}}),
  explorerWallet:()=>wallet,explorerRequests:()=>requests,
  parentGuide:()=>({clear(){},open(){observed.signed++;}}),
