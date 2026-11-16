@@ -5,7 +5,7 @@ const {parentPinRecovery}=await import('data:text/javascript;base64,'+Buffer.fro
 class Element {
  constructor(){this.events={};this.hidden=true;this.disabled=false;this.value='';this.textContent='';}
  addEventListener(name,fn){this.events[name]=fn;}
- reset(){for(const id of ['pin-recovery-new','pin-recovery-confirm'])elements.get(id).value='';}
+ reset(){for(const id of ['pin-recovery-new','pin-recovery-confirm'])document.getElementById(id).value='';}
  focus(){}
 }
 const elements=new Map();
@@ -16,7 +16,8 @@ const user={id:'parent-a',email:'parent@example.test'};
 const client={auth:{getUser:async()=>({data:{user}}),signInWithOtp:async args=>{calls.push(['email',args]);return {error:null};}},
  rpc:async(name,args)=>{calls.push([name,args]);if(pending)return pending;
  return {data:{status:args?.p_new_pin?'saved':proof}};}};
-const recovery=parentPinRecovery(()=>client,'https://example.test/auth.html',()=>{},(...args)=>done.push(args));
+const recoveryClient={...client,rpc:(name,args)=>name==='fairybucks_create_parent_pin'?Promise.resolve({data:{status:'pin_required'}}):client.rpc(name,args)};
+const recovery=parentPinRecovery(()=>recoveryClient,'https://example.test/auth.html',()=>{},(...args)=>done.push(args));
 const click=id=>$(id).events.click();
 const submit=()=>$('pin-recovery-form').events.submit({preventDefault(){}});
 await recovery.open();
