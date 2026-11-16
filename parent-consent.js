@@ -49,6 +49,9 @@ export function parentConsent(getClient,onPermission){
  }
  async function load(view,action='status'){
   if(view!==active||view.busy)return;view.busy=true;
+  view.verified=false;view.data=null;onPermission(false);
+  $('consent-print').replaceChildren();$('consent-print').hidden=true;
+  $('consent-request-form').hidden=true;$('consent-print-button').hidden=true;
   $('consent-status').textContent='Checking parent permission…';
   for(const id of ['consent-refresh','consent-request','consent-withdraw'])$(id).disabled=true;
   try{
@@ -57,6 +60,7 @@ export function parentConsent(getClient,onPermission){
    }:{p_action:action});
    if(view!==active)return;
    if(error||!data||!['setup_pending','needed','requested','verified','withdrawn'].includes(data.status))throw error||Error('Permission unavailable');
+   if(data.status!=='setup_pending'&&data.parent_id!==view.ownerId)throw Error('Permission account changed');
    view.data=data;render(view);
   }catch{
    if(view===active){onPermission(false);$('consent-request-form').hidden=true;$('consent-print-button').hidden=true;

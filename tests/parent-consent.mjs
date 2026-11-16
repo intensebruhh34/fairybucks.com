@@ -28,7 +28,7 @@ staging.clear();assert.equal(stagedAllowed,false);
 const hash=await parentNoticeHash();const user={id:'test-owner',email:'parent@example.test'};let status='needed',calls=[],permissions=[];
 const client={auth:{getUser:async()=>({data:{user}})},rpc:async(name,args)=>{
  calls.push([name,args]);if(args.p_action==='request')status='requested';if(args.p_action==='withdraw')status='withdrawn';
- return {data:{status,version:parentNotice.version,notice_hash:hash,requested_at:'2026-11-14T00:00:00Z'}};
+ return {data:{status,parent_id:user.id,version:parentNotice.version,notice_hash:hash,requested_at:'2026-11-14T00:00:00Z'}};
 }};
 const flow=parentConsent(()=>client,value=>permissions.push(value));
 await flow.open(user.id);assert.equal($('consent-request-form').hidden,false);assert.equal(permissions.at(-1),false);
@@ -41,9 +41,23 @@ status='verified';await flow.open(user.id);assert.equal(permissions.at(-1),true)
 $('consent-withdraw').events.click();await new Promise(r=>setImmediate(r));assert.equal(permissions.at(-1),false);assert.equal(status,'withdrawn');
 // Never restore access from a late response after sign-out or an account switch.
 let resolve;client.rpc=()=>new Promise(r=>{resolve=r;});const opening=flow.open(user.id);while(!resolve)await new Promise(r=>setImmediate(r));flow.clear();
-resolve({data:{status:'verified',version:1,notice_hash:hash}});await opening;assert.equal($('parent-consent-panel').hidden,true);assert.equal(permissions.at(-1),false);
-client.rpc=async()=>({data:{status:'verified',version:1,notice_hash:'stale'}});await flow.open(user.id);assert.equal(permissions.at(-1),false);
+resolve({data:{status:'verified',parent_id:user.id,version:1,notice_hash:hash}});await opening;assert.equal($('parent-consent-panel').hidden,true);assert.equal(permissions.at(-1),false);
+client.rpc=async()=>({data:{status:'verified',parent_id:user.id,version:1,notice_hash:'stale'}});await flow.open(user.id);assert.equal(permissions.at(-1),false);
 client.rpc=async()=>{throw Error('network');};await flow.open(user.id);assert.equal(permissions.at(-1),false);
+
+client.rpc=async()=>({data:{status:'verified',parent_id:'another-parent',version:parentNotice.version,notice_hash:hash}});
+await flow.open(user.id);assert.equal(permissions.at(-1),false,'Another account cannot supply permission');
+assert.equal($('consent-print-button').hidden,true);assert.equal($('consent-print').children.length,0);
+client.rpc=async()=>({data:{status:'verified',version:parentNotice.version,notice_hash:hash}});
+await flow.open(user.id);assert.equal(permissions.at(-1),false,'Missing account identity cannot supply permission');
+client.rpc=async()=>({data:{status:'verified',parent_id:user.id,version:parentNotice.version,notice_hash:hash,requested_at:'2026-11-16T00:00:00Z'}});
+await flow.open(user.id);assert.equal(permissions.at(-1),true);assert.ok($('consent-print').children.length>0);
+let failRefresh;client.rpc=()=>new Promise((resolve,reject)=>{failRefresh=reject;});
+$('consent-refresh').events.click();assert.equal(permissions.at(-1),false,'Refreshing permission must pause child entry');
+assert.equal($('consent-print').children.length,0,'A refresh must remove the old printable form');
+failRefresh(Error('lost response'));await new Promise(r=>setImmediate(r));
+assert.equal(permissions.at(-1),false);assert.equal($('consent-print').children.length,0);
+
 const childSource=readFileSync(new URL('child-vault.js',root),'utf8');assert.doesNotMatch(childSource,/cdn\.jsdelivr|supabase-js|createClient/);
 assert.match(childSource,/credentials: 'omit'/);assert.match(childSource,/permission_required/);
 console.log('PASS notice hash, guardian assertion, requested versus verified permission, withdrawal, stale responses and child CDN removal');
