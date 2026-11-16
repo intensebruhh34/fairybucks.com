@@ -17,10 +17,15 @@ begin
  select id,fairy_price into treasure,price from public.treasures where shop_key=1;
  insert into public.treasure_requests(id,child_id,treasure_id,status,price_at_request) values(r1,c1,treasure,'pending',price),(r2,c2,treasure,'pending',price);
  insert into private.parent_pin_security(parent_id,pin_hash) values(a,extensions.crypt('123456',extensions.gen_salt('bf',4)));
- -- Test-only consent permits scoped child views; it is rolled back with all fixtures.
+ -- Newer consent-enabled installations need a synthetic permission fixture.
+ -- Older development installations have no consent tables; no setup is needed there.
+ -- All permission changes and fixtures below roll back.
+ if to_regclass('private.fairybucks_privacy_release') is not null
+ and to_regclass('private.fairybucks_parent_consents') is not null then
  update private.fairybucks_privacy_release set notice_ready=true;
  insert into private.fairybucks_parent_consents(parent_id,notice_version,notice_hash,status,requested_at,verified_at,method,evidence_ref,reviewer)
  select a,notice_version,notice_hash,'verified',now(),now(),'signed_form','SYNTHETIC-EDIT-CHECK','Rollback fixture' from private.fairybucks_privacy_release;
+ end if;
  perform set_config('request.jwt.claims',jsonb_build_object('sub',a,'session_id',s)::text,true);perform set_config('role','authenticated',true);
  old:=jsonb_build_object('nickname','First explorer','age',7,'gender','boy');
  result:=public.fairybucks_edit_explorer(c1,'  Renamed explorer  ',9,'rather-not-say',a,old);
