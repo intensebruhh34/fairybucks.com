@@ -3,6 +3,8 @@
 export const siteContact = Object.freeze({
  supportEmail: 'support@fairybucks.com',
  privacyNoticeReviewed: false,
+ // Development staging only. Enable with server enforcement at the reviewed launch cutover.
+ parentPermissionEnabled: false,
  operatorName: '',
  mailingAddress: '',
  phone: ''
