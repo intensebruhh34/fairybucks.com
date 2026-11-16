@@ -11,7 +11,7 @@ create table auth.sessions(id uuid primary key,user_id uuid references auth.user
 create function auth.jwt() returns jsonb language sql as $$select current_setting('request.jwt.claims',true)::jsonb$$;
 create function auth.uid() returns uuid language sql as $$select (auth.jwt()->>'sub')::uuid$$;
 create table public.families(id uuid primary key default gen_random_uuid(),owner_id uuid references auth.users);
-create table public.child_profiles(id uuid primary key default gen_random_uuid(),family_id uuid references families,nickname text);
+create table public.child_profiles(id uuid primary key default gen_random_uuid(),family_id uuid references families,nickname text,age integer,gender text,created_at timestamptz default now());
 create table public.fairy_wallets(child_id uuid primary key references child_profiles,balance int,updated_at timestamptz default now());
 create table public.fairy_transactions(id uuid primary key default gen_random_uuid(),child_id uuid references child_profiles,amount int,description text,created_at timestamptz default now());
 create table public.lost_teeth(id uuid primary key default gen_random_uuid(),child_id uuid references child_profiles,lost_on date,created_at timestamptz default now());
@@ -24,8 +24,14 @@ insert into auth.users(id) values('44a684ee-6e65-4098-80d7-3a21c3e2bcb4'),('0ad4
 insert into auth.sessions values(gen_random_uuid(),'44a684ee-6e65-4098-80d7-3a21c3e2bcb4',now());
 insert into families(owner_id) select id from auth.users;
 update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`);
-const files=readdirSync(root+'/supabase/migrations').sort();
+const legacyExplorerCheck=process.argv.includes('--explorer-without-consent');
+const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||!f.includes('parent_consent'));
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
+if(legacyExplorerCheck){
+ await db.exec(readFileSync(root+'/supabase/checks/edit_explorer.sql','utf8'));
+ console.log('PASS explorer verification on a database without the staged consent migration');
+ await db.close();process.exit(0);
+}
 // Test-only permissions keep legacy regression fixtures exercising their original behavior.
 // Enable enforcement only in local regression fixtures; production defaults to staged development.
 await db.exec(`update private.fairybucks_privacy_release set notice_ready=true,enforcement_enabled=true;
@@ -51,6 +57,8 @@ await db.exec(readFileSync(root+'/supabase/checks/parent_pin_recovery.sql','utf8
 console.log('PASS email PIN recovery, single-use proofs, isolation and revocation');
 await db.exec(readFileSync(root+'/supabase/checks/account_deletion.sql','utf8'));
 console.log('PASS account deletion, PIN/recent-auth checks, atomic cleanup and family isolation');
+await db.exec(readFileSync(root+'/supabase/checks/edit_explorer.sql','utf8'));
+console.log('PASS explorer edits, optional details, conflict protection and two-explorer data separation');
 await db.exec(readFileSync(root+'/supabase/checks/parent_pin_setup.sql','utf8'));
 console.log('PASS independent first-PIN setup, no explorers, existing PIN protection and session checks');
 await db.exec(readFileSync(root+'/supabase/checks/parent_consent.sql','utf8'));

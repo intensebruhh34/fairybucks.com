@@ -1,0 +1,20 @@
+import {readFileSync} from 'node:fs';import assert from 'node:assert/strict';
+const source=readFileSync(new URL('../explorer-profile-editor.js',import.meta.url),'utf8');
+const {explorerProfileEditor}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const nodes=new Map();const $=id=>{if(!nodes.has(id))nodes.set(id,{hidden:true,value:'',events:{},addEventListener(n,f){this.events[n]=f;},focus(){},reset(){for(const k of ['name','age','gender'])$('edit-profile-'+k).value='';}});return nodes.get(id);};
+globalThis.document={getElementById:$};let calls=[],saved=[],response,resolve;
+const client={rpc:async(name,args)=>{calls.push([name,args]);return response;}};
+const editor=explorerProfileEditor(()=>client,async(...args)=>saved.push(args));
+const first={id:'first',nickname:'First explorer',age:7,gender:'boy'},second={id:'second',nickname:'Second explorer',age:null,gender:null};
+const submit=()=>$('edit-profile-form').events.submit({preventDefault(){}});
+editor.open(first,'parent-a');assert.equal($('edit-profile-name').value,first.nickname);assert.equal($('edit-profile-age').value,7);
+$('edit-profile-name').value=' ';await submit();assert.equal(calls.length,0);
+$('edit-profile-name').value=' New name ';$('edit-profile-age').value='4.5';await submit();assert.equal(calls.length,0);
+$('edit-profile-age').value='';$('edit-profile-gender').value='rather-not-say';response={data:{status:'saved',profile:{...first,nickname:'New name',age:null,gender:'rather-not-say'}}};await submit();
+assert.equal(calls[0][1].p_child_id,'first');assert.equal(calls[0][1].p_age,null);assert.equal(calls[0][1].p_nickname,'New name');assert.equal(calls[0][1].p_expected_parent,'parent-a');assert.deepEqual(calls[0][1].p_original,{nickname:first.nickname,age:7,gender:'boy'});assert.equal(saved.length,1);assert.equal($('edit-profile-panel').hidden,true);
+editor.open(second,'parent-a');assert.equal($('edit-profile-age').value,'');assert.equal($('edit-profile-gender').value,'rather-not-say');$('edit-profile-name').value='Unsaved';$('edit-profile-cancel').events.click();assert.equal(calls.length,1);
+editor.open(first,'parent-a');response={data:{status:'changed',profile:{...first,nickname:'Another tab'}}};await submit();assert.equal($('edit-profile-name').value,'Another tab');assert.match($('edit-profile-status').textContent,/another window/);assert.equal(saved.length,1);
+client.rpc=async()=>{throw Error('network');};await submit();assert.match($('edit-profile-status').textContent,/could not confirm/);assert.equal(saved.length,1);
+// A pending edit stays tied to its original explorer; late replies after navigation/sign-out are ignored.
+client.rpc=async(name,args)=>{calls.push([name,args]);return await new Promise(r=>resolve=r);};editor.open(first,'parent-a');const pending=submit();editor.open(second,'parent-a');await submit();assert.equal(calls.at(-1)[1].p_child_id,'first');editor.clear();resolve({data:{status:'saved',profile:first}});await pending;assert.equal(saved.length,1);assert.equal($('edit-profile-panel').hidden,true);
+console.log('PASS profile editor validation, optional fields, cancel, conflicts, duplicate saves and stale responses');

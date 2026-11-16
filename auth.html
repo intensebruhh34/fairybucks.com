@@ -40,6 +40,11 @@ body{display:block;padding:0}
 #treasure-requests-list .request-row,#treasure-review-list .request-row{padding:10px 0}
 .request-actions{display:flex;gap:6px;flex-wrap:wrap}
 .danger-action{border:2px solid #9b3b32;background:#fff1ed;color:#8b261d}.danger-action:focus-visible{outline:3px solid #9b3b32}
+#pin-forgot{margin-top:14px}
+.profile-edit-button{width:100%;margin-top:10px}
+#edit-profile-fields{border:0;padding:0;margin:0;min-width:0}
+#edit-profile-gender{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}
+#edit-profile-cancel{margin-top:12px}
 #consent-request-form input[type=checkbox]{width:auto;margin-right:8px}
 @media print{body>*{display:none!important}#consent-print{display:block!important;color:#000;background:#fff;font:11pt/1.4 Georgia,serif;padding:0}#consent-print h1{font-size:18pt;color:#000}#consent-print h2{font-size:13pt;break-after:avoid}#consent-print p{orphans:3;widows:3;overflow-wrap:anywhere}@page{size:letter;margin:.6in}}
 </style></head><body><main class="fairy-page">
@@ -147,6 +152,17 @@ body{display:block;padding:0}
 <p id="profile-status" role="status" aria-live="polite"></p>
 <button type="button" id="profile-retry" hidden>Reload explorers</button>
 <ul id="profile-list"></ul>
+<section id="edit-profile-panel" class="fairy-panel" hidden aria-labelledby="edit-profile-title">
+<h3 id="edit-profile-title">Edit explorer</h3>
+<p class="muted">Update the nickname and optional details. Fairy Bucks, teeth and treasure history stay with this explorer.</p>
+<form id="edit-profile-form"><fieldset id="edit-profile-fields">
+<label for="edit-profile-name">First name or nickname</label><input id="edit-profile-name" maxlength="35" autocomplete="off" required>
+<label for="edit-profile-age">Age (optional, 2–18)</label><input id="edit-profile-age" type="number" min="2" max="18" step="1" inputmode="numeric">
+<label for="edit-profile-gender">Gender (optional)</label><select id="edit-profile-gender"><option value="rather-not-say">Rather not say</option><option value="boy">Boy</option><option value="girl">Girl</option></select>
+<button type="submit" class="primary">Save explorer changes</button></fieldset>
+<p id="edit-profile-status" role="status" aria-live="polite"></p></form>
+<button type="button" id="edit-profile-cancel">Cancel editing</button>
+</section>
 <details id="profile-form" hidden>
 <summary>Add an explorer</summary>
 <form id="add-profile">
@@ -248,6 +264,7 @@ body{display:block;padding:0}
 <script src="/auth-config.js"></script>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { explorerProfileEditor } from "/explorer-profile-editor.js";
 import { parentConsent } from "/parent-consent.js";
 import { accountDeletion } from "/account-deletion.js";
 import { renderContact } from "/site-contact.js";
@@ -265,6 +282,11 @@ const target=origin+"/auth.html";
 let client=null, familyView=null;
 const wallet=explorerWallet(()=>client,()=>requests.renderReview());
 const requests=explorerRequests(()=>client,wallet);
+const profileEditor=explorerProfileEditor(()=>client,async(profile,ownerId)=>{
+ const view=familyView;if(view?.ownerId!==ownerId)return;
+ const loaded=await loadProfiles(view);
+ if(loaded && view===familyView)$("profile-status").textContent="Explorer details saved.";
+});
 const guide=parentGuide(()=>client,ownerId=>{
  if(familyView?.ownerId!==ownerId)return;
  familyView.guideReady=true;
@@ -318,6 +340,7 @@ function showExplorer(view){
  $("explorer-shop").href=profile?"/#shop&explorer="+profile.id:"/#shop";
  wallet.open(profile?.id);
  requests.open(profile?.id,Number(route.get("treasure")));
+ if(profile)profileEditor.clear();
  if(profile && !wasOpen)$("explorer-title").focus();
  if(!profile && hash){
   history.replaceState(null,"",location.pathname);
@@ -325,6 +348,7 @@ function showExplorer(view){
  }
 }
 function hideFamily(){
+ profileEditor.clear();
  consent.clear();
  deletion.clear();
  pinRecovery.clear();
@@ -399,15 +423,18 @@ async function loadFamily(view, create=false){
  }
 }
 async function loadProfiles(view){
+ if(view!==familyView||!view?.familyId)return false;
+ profileEditor.clear();
  $("profile-retry").hidden=true;
  $("profile-status").textContent="Finding your explorers…";
  try{
   const {data,error}=await client.from("child_profiles")
-   .select("id,nickname").eq("family_id",view.familyId).order("created_at").order("id");
+   .select("id,nickname,age,gender").eq("family_id",view.familyId).order("created_at").order("id");
   if(error)throw error;
   if(view!==familyView)return;
   view.profiles=data;
-  const explorers=data.map(({id,nickname})=>{
+  const explorers=data.map(profile=>{
+   const {id,nickname}=profile;
    const item=document.createElement("li");
    const name=document.createElement("strong");
    name.textContent=nickname;
@@ -416,17 +443,22 @@ async function loadProfiles(view){
    open.href="#explorer="+id;
    open.textContent="Open Vault";
    open.setAttribute("aria-label","Open Vault for "+nickname);
-   item.append(name,open);
+   const edit=document.createElement("button");edit.type="button";edit.className="profile-edit-button";edit.textContent="Edit explorer";
+   edit.setAttribute("aria-label","Edit explorer "+nickname);
+   edit.addEventListener("click",()=>{if(view===familyView)profileEditor.open(profile,view.ownerId);});
+   item.append(name,open,edit);
    return item;
   });
   $("profile-list").replaceChildren(...explorers);
   $("profile-status").textContent=explorers.length?"":"Your vault is ready. Add your first explorer below.";
   $("profile-form").hidden=!view.permissionAllowed;
   showExplorer(view);
+  return true;
  }catch{
   if(view!==familyView)return;
   $("profile-status").textContent="We couldn't load your explorers. Please try again.";
   $("profile-retry").hidden=false;
+  return false;
  }
 }
 async function saveProfile(event){
