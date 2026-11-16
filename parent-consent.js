@@ -5,17 +5,45 @@ export async function parentNoticeHash(){
  const bytes=new TextEncoder().encode(JSON.stringify({notice:parentNotice,contact}));
  return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');
 }
+export function permissionRehearsalEmail(hash) {
+ if(!/^[0-9a-f]{64}$/.test(hash))throw Error('A current notice reference is required');
+ const subject='REHEARSAL — Fairy Bucks parent permission notice';
+ const body=[
+  'REHEARSAL ONLY — NOT A LIVE CONSENT REQUEST',
+  'Use only your own test inbox. This draft does not grant or record permission.',
+  '',
+  'Fairy Bucks is operated by '+siteContact.operatorName+'.',
+  siteContact.mailingAddress,
+  'Phone: '+siteContact.phone,
+  'Support and replies: '+siteContact.supportEmail,
+  '',
+  'Notice version: '+parentNotice.version,
+  'Notice reference: '+hash,
+  'Privacy notice: https://fairybucks.com/privacy.html',
+  '',
+  'This is a preview of the notice planned for the pilot. Parent permission will be required before collecting information from a child through child mode. The current development website is still staged.',
+  '',
+  ...parentNotice.sections.flatMap(([title,copy])=>[title,copy,'']),
+  'Service providers and support: Supabase stores and protects vault/authentication records; GitHub Pages serves the website; Resend delivers account emails; jsDelivr serves the parent-page authentication library; configured email forwarding and Gmail handle support messages and returned forms. The forwarding provider and retention settings remain under review.',
+  '',
+  'TEST ONLY: read this email and the linked Privacy draft. Print the rehearsal form in the Parent Portal, use synthetic details, sign it, and return a readable scan/photo to '+siteContact.supportEmail+' with REHEARSAL in the subject. Do not send a child’s information, government ID, password, PIN or sign-in link.',
+  'For the planned live flow, a parent can refuse or withdraw permission, request review/deletion, or ask questions using the support address. A reply or signed rehearsal form does not approve a real account.',
+  '',
+  'OPERATOR REVIEW ITEM: finalize the response deadline and deletion procedure for uncompleted permission requests before preparing a live notice. Confirm provider details and retention, then review this draft and the signed-form process before pilot use.'
+ ].join('\n');
+ return {subject,body};
+}
 export function parentConsent(getClient,onPermission){
  const $=id=>document.getElementById(id);let active=null;
  const contactsReady=()=>Boolean(siteContact.privacyNoticeReviewed&&siteContact.operatorName&&siteContact.mailingAddress&&siteContact.phone&&siteContact.supportEmail);
- function clear(){active=null;$('parent-consent-panel').hidden=true;$('consent-copy').replaceChildren();$('consent-print').replaceChildren();$('consent-guardian').checked=false;onPermission(false);}
+ function clear(){active=null;$('parent-consent-panel').hidden=true;$('consent-copy').replaceChildren();$('consent-print').replaceChildren();$('consent-guardian').checked=false;$('consent-rehearsal-panel').hidden=true;$('consent-rehearsal-email').value='';$('consent-rehearsal-status').textContent='';$('consent-rehearsal-print').disabled=true;$('consent-rehearsal-preview').disabled=false;onPermission(false);}
  function text(tag,value){const el=document.createElement(tag);el.textContent=value;return el;}
  function renderNotice(){
   $('consent-copy').replaceChildren(...parentNotice.sections.map(([title,copy])=>{const section=document.createElement('section');section.append(text('h3',title),text('p',copy));return section;}));
  }
- function printForm(view){
+ function printForm(view,rehearsal=false){
   const root=$('consent-print');
-  root.replaceChildren(text('h1','Fairybucks — Parent Consent Form'),
+  root.replaceChildren(text('h1',rehearsal?'REHEARSAL ONLY — Test Consent Form':'Fairybucks — Parent Consent Form'),
    text('p',siteContact.operatorName+' · '+siteContact.mailingAddress+' · '+siteContact.phone+' · '+siteContact.supportEmail),
    text('p','Parent email: '+view.user.email),text('p','Account reference: '+view.user.id),
    text('p','Notice version: '+parentNotice.version+' · Reference: '+view.hash),
@@ -48,7 +76,7 @@ export function parentConsent(getClient,onPermission){
   onPermission(verified);
  }
  async function load(view,action='status'){
-  if(view!==active||view.busy)return;view.busy=true;
+  if(view!==active||view.busy||view.rehearsal)return;view.busy=true;
   view.verified=false;view.data=null;onPermission(false);
   $('consent-print').replaceChildren();$('consent-print').hidden=true;
   $('consent-request-form').hidden=true;$('consent-print-button').hidden=true;
@@ -70,7 +98,7 @@ export function parentConsent(getClient,onPermission){
  async function open(ownerId){
   // Staged development keeps the existing authenticated/PIN-controlled flow working.
   // This is not verified consent. The server independently enforces the launch setting.
-  if(siteContact.parentPermissionEnabled===false){clear();onPermission(true);return;}
+  if(siteContact.parentPermissionEnabled===false){clear();active={ownerId,rehearsal:true};$('consent-rehearsal-panel').hidden=false;onPermission(true);return;}
   clear();const view=active={ownerId};$('parent-consent-panel').hidden=false;renderNotice();
   $('consent-request-form').hidden=true;$('consent-print-button').hidden=true;$('consent-withdraw').hidden=true;
   try{
@@ -80,11 +108,31 @@ export function parentConsent(getClient,onPermission){
    view.user=data.user;view.hash=hash;await load(view);
   }catch{if(view===active){$('consent-status').textContent='Sign in again to review parent permission.';onPermission(false);}}
  }
- $('consent-request-form').addEventListener('submit',event=>{event.preventDefault();if(active&&!active.busy&&$('consent-guardian').checked)load(active,'request');});
- $('consent-refresh').addEventListener('click',()=>{if(active?.hash)load(active);});
- $('consent-withdraw').addEventListener('click',()=>{if(active&&!active.busy&&window.confirm('Withdraw parent permission and end all child vault sessions? Existing records remain available for parent review or deletion.'))load(active,'withdraw');});
+ async function previewRehearsal(){
+  const view=active;if(!view?.rehearsal||view.busy)return;
+  view.busy=true;view.rehearsalReady=false;
+  $('consent-rehearsal-preview').disabled=true;$('consent-rehearsal-print').disabled=true;
+  $('consent-rehearsal-email').value='';$('consent-print').replaceChildren();
+  $('consent-rehearsal-status').textContent='Preparing test paperwork…';
+  try{
+   const [{data,error},hash]=await Promise.all([getClient().auth.getUser(),parentNoticeHash()]);
+   if(view!==active)return;
+   if(error||data.user?.id!==view.ownerId)throw Error('Parent sign-in changed');
+   const draft=permissionRehearsalEmail(hash);
+   $('consent-rehearsal-email').value='Subject: '+draft.subject+'\n\n'+draft.body;
+   printForm({user:{email:'parent@example.test — synthetic fixture',id:'REHEARSAL-ONLY-NOT-A-REAL-ACCOUNT'},hash,data:{requested_at:'REHEARSAL — no database request submitted'}},true);
+   view.rehearsalReady=true;$('consent-rehearsal-print').disabled=false;
+   $('consent-rehearsal-status').textContent='Test draft ready. Copy it manually to your own test email. Printing or returning this form does not verify permission.';
+  }catch{if(view===active)$('consent-rehearsal-status').textContent='Sign in again to prepare the test paperwork.';}
+  finally{view.busy=false;if(view===active)$('consent-rehearsal-preview').disabled=false;}
+ }
+ $('consent-rehearsal-preview').addEventListener('click',previewRehearsal);
+ $('consent-rehearsal-print').addEventListener('click',()=>{if(active?.rehearsal&&active.rehearsalReady&&!active.busy)window.print();});
+ $('consent-request-form').addEventListener('submit',event=>{event.preventDefault();if(active&&!active.rehearsal&&!active.busy&&$('consent-guardian').checked)load(active,'request');});
+ $('consent-refresh').addEventListener('click',()=>{if(active?.hash&&!active.rehearsal)load(active);});
+ $('consent-withdraw').addEventListener('click',()=>{if(active&&!active.rehearsal&&!active.busy&&window.confirm('Withdraw parent permission and end all child vault sessions? Existing records remain available for parent review or deletion.'))load(active,'withdraw');});
  $('consent-print-button').addEventListener('click',()=>{
-  const view=active;if(!view||view.busy||!contactsReady()||!['requested','verified'].includes(view.data?.status))return;
+  const view=active;if(!view||view.rehearsal||view.busy||!contactsReady()||!['requested','verified'].includes(view.data?.status))return;
   window.print();
  });
  return {open,clear};
