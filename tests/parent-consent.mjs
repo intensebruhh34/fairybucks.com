@@ -10,6 +10,8 @@ const contact={operatorName:actualContact.siteContact.operatorName,mailingAddres
 const expected=createHash('sha256').update(JSON.stringify({notice:parentNotice,contact})).digest('hex');
 assert.match(readFileSync(new URL('supabase/migrations/20261115010000_parent_consent.sql',root),'utf8'),/notice_ready boolean not null default false/);
 assert.equal(expected.length,64);
+assert.equal(actualContact.siteContact.parentPermissionEnabled,false,'Merge must preserve the existing development flow');
+assert.match(readFileSync(new URL('supabase/migrations/20261115010000_parent_consent.sql',root),'utf8'),/enforcement_enabled boolean not null default false/);
 const fakeContact={siteContact:{operatorName:'Test operator',mailingAddress:'Test mailing address',phone:'Test phone',supportEmail:'support@example.test',privacyNoticeReviewed:true}};
 let source=readFileSync(new URL('parent-consent.js',root),'utf8').replace("'/parent-notice.js'",JSON.stringify(asModule(noticeSource))).replace("'/site-contact.js'",JSON.stringify(asModule('export const siteContact='+JSON.stringify(fakeContact.siteContact))));
 const {parentConsent,parentNoticeHash}=await import(asModule(source));
@@ -17,6 +19,12 @@ class Element{constructor(){this.children=[];this.hidden=true;this.checked=false
 const els=new Map();const $=id=>{if(!els.has(id))els.set(id,new Element());return els.get(id);};
 globalThis.document={getElementById:$,createElement:()=>new Element()};
 let printed=0;globalThis.window={confirm:()=>true,print(){printed++;}};
+// Actual staged config must not call an undeployed RPC or claim verified permission.
+const stagedSource=source.replace(JSON.stringify(asModule('export const siteContact='+JSON.stringify(fakeContact.siteContact))),JSON.stringify(asModule('export const siteContact='+JSON.stringify(actualContact.siteContact))));
+const staged=await import(asModule(stagedSource));let stagedCalls=0,stagedAllowed=false;
+const staging=staged.parentConsent(()=>{stagedCalls++;throw Error('RPC must not be needed before activation');},allowed=>stagedAllowed=allowed);
+await staging.open('test-owner');assert.equal(stagedCalls,0);assert.equal(stagedAllowed,true);assert.equal($('parent-consent-panel').hidden,true);
+staging.clear();assert.equal(stagedAllowed,false);
 const hash=await parentNoticeHash();const user={id:'test-owner',email:'parent@example.test'};let status='needed',calls=[],permissions=[];
 const client={auth:{getUser:async()=>({data:{user}})},rpc:async(name,args)=>{
  calls.push([name,args]);if(args.p_action==='request')status='requested';if(args.p_action==='withdraw')status='withdrawn';
