@@ -11,6 +11,7 @@ const statusLabels = {
   cancelled: "Cancelled", fulfilled: "Fulfilled"
 };
 let busy = false;
+let closed = false;
 let viewRequest = 0;
 let catalog = [];
 let category = "All";
@@ -116,7 +117,9 @@ function renderCatalog() {
 }
 
 function closeVault(message) {
-  clearChildToken();
+  closed = true;
+  ++viewRequest;
+  pending.clear();
   $("child-content").hidden = true;
   $("request-list").replaceChildren();
   $("child-catalog").replaceChildren();
@@ -127,6 +130,18 @@ function closeVault(message) {
   catalog = [];
   $("child-status").textContent = message;
   $("child-retry").hidden = true;
+  // Hide private content even when browser storage cannot be cleared.
+  try { if (childToken() === token) clearChildToken(); } catch { /* The closed page stays locked. */ }
+}
+
+function sessionCurrent() {
+  if (closed) return false;
+  const stored = childToken();
+  if (token && stored === token) return true;
+  closeVault("Ask a grown-up to open your Fairy Vault.");
+  // A new handoff belongs to a fresh page, never to this page’s old replies.
+  if (stored) location.reload();
+  return false;
 }
 
 async function call(action, args = {}) {
@@ -144,18 +159,10 @@ async function call(action, args = {}) {
 async function load(message = "") {
   const request = ++viewRequest;
   $("child-retry").hidden = true;
-  const storedToken = childToken();
-  if (!storedToken) {
-    closeVault("Ask a grown-up to open your Fairy Vault.");
-    return;
-  }
-  if (storedToken !== token) {
-    location.reload();
-    return;
-  }
+  if (!sessionCurrent()) return;
   try {
     const data = await call("view");
-    if (request !== viewRequest) return;
+    if (request !== viewRequest || !sessionCurrent()) return;
     if (data.status === "permission_required") {
       closeVault("Ask a grown-up to review parent permission in the Parent Portal.");
       return;
@@ -168,7 +175,7 @@ async function load(message = "") {
     render(data);
     $("child-status").textContent = message;
   } catch {
-    if (request !== viewRequest) return;
+    if (request !== viewRequest || !sessionCurrent()) return;
     $("child-status").textContent = "Couldn't refresh your Fairy Vault. Try again.";
     $("child-retry").hidden = false;
   }
@@ -182,11 +189,12 @@ function setBusy(value) {
 }
 
 async function change(action, args, onResult) {
-  if (busy) return;
+  if (busy || !sessionCurrent()) return;
   setBusy(true);
   $("child-status").textContent = "Saving…";
   try {
     const { status } = await call(action, args);
+    if (!sessionCurrent()) return;
     if (status === "permission_required") {
       closeVault("Ask a grown-up to review parent permission in the Parent Portal.");
       return;
@@ -197,14 +205,14 @@ async function change(action, args, onResult) {
     }
     await load(onResult(status));
   } catch {
-    $("child-status").textContent = "Couldn't confirm the change. Try the same action again.";
+    if (sessionCurrent()) $("child-status").textContent = "Couldn't confirm the change. Try the same action again.";
   } finally {
     setBusy(false);
   }
 }
 
 async function request(treasure) {
-  if (busy || !window.confirm("Request " + treasure.name + " for " + treasure.price + " Fairy Bucks?")) return;
+  if (busy || !sessionCurrent() || !window.confirm("Request " + treasure.name + " for " + treasure.price + " Fairy Bucks?")) return;
   if (!pending.has(treasure.key)) pending.set(treasure.key, crypto.randomUUID());
   storeChildRequests(pending);
   await change("request", {
@@ -226,7 +234,7 @@ async function request(treasure) {
 }
 
 async function cancel(request) {
-  if (busy || !window.confirm("Cancel this treasure request?")) return;
+  if (busy || !sessionCurrent() || !window.confirm("Cancel this treasure request?")) return;
   await change("cancel", { p_request_id: request.id }, status => {
     if (status === "cancelled") return "Treasure request cancelled.";
     if (status === "already_decided") return "This request was already handled.";
