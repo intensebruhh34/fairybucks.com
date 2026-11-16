@@ -5,7 +5,7 @@ Parents can select **Edit explorer** in their explorer list, change a nickname o
 ## Deployment order
 
 1. Run `supabase/migrations/20261116170000_edit_explorer.sql` in the Supabase SQL Editor.
-2. Separately run `supabase/checks/edit_explorer.sql`. It creates random fixtures inside a transaction, checks edits, access controls, conflicts and two explorers’ separate child-mode data, and rolls back. Expect PASS.
+2. Separately run `supabase/checks/edit_explorer.sql`. It creates random fixtures inside a transaction, checks edits, access controls, conflicts and two explorers’ separate child-mode data, and rolls back. Expect PASS. It supports both older development databases without consent tables and newer consent-enabled installations; it does not require enabling the staged privacy workflow.
 3. Merge this PR to publish the portal and FAQ changes.
 
 The new RPC requires the current parent account and a live sign-in session. Only explorers in that parent’s family can be edited. A stale snapshot returns the current details for review instead of overwriting a newer edit. The update touches only nickname, age and gender; it does not move or delete an explorer or change financial/history records. It does not change the staged parent-permission launch flags.
