@@ -64,6 +64,9 @@ export function parentConsent(getClient,onPermission){
   }finally{view.busy=false;if(view===active)for(const id of ['consent-refresh','consent-request','consent-withdraw'])$(id).disabled=false;}
  }
  async function open(ownerId){
+  // Staged development keeps the existing authenticated/PIN-controlled flow working.
+  // This is not verified consent. The server independently enforces the launch setting.
+  if(siteContact.parentPermissionEnabled===false){clear();onPermission(true);return;}
   clear();const view=active={ownerId};$('parent-consent-panel').hidden=false;renderNotice();
   $('consent-request-form').hidden=true;$('consent-print-button').hidden=true;$('consent-withdraw').hidden=true;
   try{
