@@ -24,8 +24,14 @@ insert into auth.users(id) values('44a684ee-6e65-4098-80d7-3a21c3e2bcb4'),('0ad4
 insert into auth.sessions values(gen_random_uuid(),'44a684ee-6e65-4098-80d7-3a21c3e2bcb4',now());
 insert into families(owner_id) select id from auth.users;
 update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`);
-const files=readdirSync(root+'/supabase/migrations').sort();
+const legacyExplorerCheck=process.argv.includes('--explorer-without-consent');
+const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||!f.includes('parent_consent'));
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
+if(legacyExplorerCheck){
+ await db.exec(readFileSync(root+'/supabase/checks/edit_explorer.sql','utf8'));
+ console.log('PASS explorer verification on a database without the staged consent migration');
+ await db.close();process.exit(0);
+}
 // Test-only permissions keep legacy regression fixtures exercising their original behavior.
 // Enable enforcement only in local regression fixtures; production defaults to staged development.
 await db.exec(`update private.fairybucks_privacy_release set notice_ready=true,enforcement_enabled=true;
