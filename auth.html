@@ -66,7 +66,7 @@ body{display:block;padding:0}
 <form id="new-password" hidden><h2 id="password-title">Set your parent password</h2><p class="muted">Only enter a password after opening a valid account invitation or recovery link.</p><label for="password-new">New password (12+ characters)</label><input id="password-new" type="password" autocomplete="new-password" minlength="12" required><label for="password-confirm">Confirm password</label><input id="password-confirm" type="password" autocomplete="new-password" minlength="12" required><button class="primary" type="submit">Save password</button></form>
 <section id="pin-recovery-panel" class="fairy-panel" hidden aria-labelledby="pin-recovery-title">
 <h2 id="pin-recovery-title" tabindex="-1">Reset your Parent PIN</h2>
-<p>Verify your parent email to choose a new PIN. Your account password stays the same.</p>
+<p id="pin-recovery-description">Verify your parent email to choose a new PIN. Your account password stays the same.</p>
 <p id="pin-recovery-email"></p>
 <p id="pin-recovery-status" role="status" aria-live="polite"></p>
 <button type="button" id="pin-recovery-send" class="primary" hidden>Email me a PIN recovery link</button>
@@ -76,7 +76,7 @@ body{display:block;padding:0}
 <input id="pin-recovery-new" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required>
 <label for="pin-recovery-confirm">Confirm new Parent PIN</label>
 <input id="pin-recovery-confirm" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required>
-<p>Saving ends existing parent unlocks and child vault sessions. Unlock again with your new PIN, then use Hand Over the Magic to reopen a child's vault. Balances, teeth and requests stay unchanged.</p>
+<p id="pin-recovery-effects">Saving ends existing parent unlocks and child vault sessions. Unlock again with your new PIN, then use Hand Over the Magic to reopen a child's vault. Balances, teeth and requests stay unchanged.</p>
 <button type="submit" id="pin-recovery-save" class="primary">Save new Parent PIN</button>
 </form>
 <p><button type="button" id="pin-recovery-back">Return to Parent Portal</button></p>
@@ -91,7 +91,7 @@ body{display:block;padding:0}
 <p><strong>This permanently deletes your parent login and all explorer profiles in this account (currently <span id="account-deletion-count"></span>).</strong></p>
 <ul><li>Family vaults, Fairy Buck balances and transaction history</li><li>Tooth records, treasure requests and delivery history</li><li>Parent PIN, reward settings, guide progress and recovery records</li><li>Parent sign-in sessions and child vault sessions</li></ul>
 <p>This cannot be undone. Other families are unaffected. Deletion does not cancel purchases you arranged separately or remove copies you downloaded, emailed or saved outside the site. Provider logs and backups expire under their retention schedules; see <a href="/privacy.html">Privacy</a>.</p>
-<div id="account-deletion-pin-area"><label for="account-deletion-pin">Current six-digit Parent PIN</label><input id="account-deletion-pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off"></div>
+<div id="account-deletion-pin-area"><label for="account-deletion-pin">Current six-digit Parent PIN</label><input id="account-deletion-pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off"><button type="button" id="account-deletion-pin-forgot">Reset Parent PIN</button></div>
 <label for="account-deletion-confirm">Type DELETE to confirm permanent deletion</label><input id="account-deletion-confirm" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" pattern="DELETE" required>
 <button type="submit" id="account-deletion-submit" class="danger-action">Permanently delete my account and family data</button>
 </form>
@@ -99,7 +99,7 @@ body{display:block;padding:0}
 <button type="button" id="account-deletion-back">Keep my account — return to portal</button>
 </section>
 <section id="parent-help" hidden aria-label="Parent guide and help">
-<p><button type="button" id="pin-recovery-open">Reset Parent PIN</button></p>
+<p><button type="button" id="pin-setup-open" hidden>Create Parent PIN</button></p>
 <details class="fairy-panel"><summary>Account, privacy and support</summary><p data-support-email><a href="mailto:support@fairybucks.com">support@fairybucks.com</a></p><p><a href="/support.html">Parent help</a> · <a href="/privacy.html">Privacy notice</a></p><button type="button" id="account-deletion-open">Delete account and family data</button></details>
 <p><button type="button" id="welcome-open">Welcome guide</button> <button type="button" id="guide-logout">Sign out</button> <a href="#parent-faq">Parent FAQ</a> <a href="#print-fairy-bucks">Print Fairy Bucks</a></p>
 <section id="welcome-panel" class="fairy-panel" aria-labelledby="welcome-title">
@@ -196,7 +196,6 @@ body{display:block;padding:0}
 </section>
 <details id="parent-controls">
 <summary>🔐 Parent controls</summary>
-<button type="button" id="pin-forgot">Forgot Parent PIN?</button>
 <p id="pin-status" role="status" class="muted"></p>
 <button type="button" id="pin-retry" hidden>Check PIN status</button>
 <form id="pin-form" hidden>
@@ -208,6 +207,7 @@ body{display:block;padding:0}
 </div>
 <button type="submit" id="pin-submit" class="primary">Unlock</button>
 </form>
+<button type="button" id="pin-forgot" hidden>Reset Parent PIN</button>
 <div id="tooth-controls" hidden>
 <form id="reward-form">
 <label for="tooth-reward-amount">Fairy Bucks per tooth</label>
@@ -268,6 +268,7 @@ const requests=explorerRequests(()=>client,wallet);
 const guide=parentGuide(()=>client,ownerId=>{
  if(familyView?.ownerId!==ownerId)return;
  familyView.guideReady=true;
+ pinRecovery.refreshSetup?.(ownerId);
  consent.open(ownerId);
  $("signed-in").hidden=false;
  loadFamily(familyView);
@@ -280,11 +281,12 @@ const consent=parentConsent(()=>client,allowed=>{
 });
 const pinRecovery=parentPinRecovery(()=>client,target,()=>{
  hideFamily(); message(""); $("auth-area").hidden=true; $("new-password").hidden=true; $("loading").hidden=true;
-},(user,saved)=>{
+},(user,saved,kind)=>{
  if(user)signed(user); else tab("login");
- message(saved?"Parent PIN reset. Unlock Parent controls with your new PIN.":"",saved?"ok":"");
+ message(saved?(kind==="created"?"Parent PIN created. You can add an explorer whenever you are ready.":"Parent PIN reset. Unlock Parent controls with your new PIN."):"",saved?"ok":"");
 });
-$("pin-recovery-open").addEventListener("click",()=>pinRecovery.open());
+$("pin-setup-open").addEventListener("click",()=>pinRecovery.open({setup:true}));
+$("account-deletion-pin-forgot").addEventListener("click",()=>pinRecovery.open());
 $("pin-forgot").addEventListener("click",()=>pinRecovery.open());
 const deletion=accountDeletion(()=>client,()=>{
  hideFamily(); message(""); $("auth-area").hidden=true; $("new-password").hidden=true; $("loading").hidden=true;

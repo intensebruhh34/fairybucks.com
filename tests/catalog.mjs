@@ -51,6 +51,8 @@ await db.exec(readFileSync(root+'/supabase/checks/parent_pin_recovery.sql','utf8
 console.log('PASS email PIN recovery, single-use proofs, isolation and revocation');
 await db.exec(readFileSync(root+'/supabase/checks/account_deletion.sql','utf8'));
 console.log('PASS account deletion, PIN/recent-auth checks, atomic cleanup and family isolation');
+await db.exec(readFileSync(root+'/supabase/checks/parent_pin_setup.sql','utf8'));
+console.log('PASS independent first-PIN setup, no explorers, existing PIN protection and session checks');
 await db.exec(readFileSync(root+'/supabase/checks/parent_consent.sql','utf8'));
 console.log('PASS consent readiness, verified-only gates, version/hash checks, withdrawal and isolation');
 // Verify the migration leaves legacy request prices and balances intact.

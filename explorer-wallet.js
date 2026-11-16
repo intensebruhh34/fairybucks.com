@@ -65,6 +65,7 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
     $("pin-form").reset();
     $("pin-submit").disabled = false;
     $("pin-form").hidden = true;
+    $("pin-forgot").hidden = true;
     $("pin-retry").hidden = true;
     $("tooth-controls").hidden = true;
     $("record-tooth").disabled = false;
@@ -77,6 +78,7 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
 
   function showPin(view, status) {
     view.setup = status === "setup_required";
+    $("pin-forgot").hidden = view.setup;
     $("pin-confirm-area").hidden = !view.setup;
     $("parent-pin-confirm").required = view.setup;
     $("pin-submit").textContent = view.setup ? "Set PIN and unlock" : "Unlock";
@@ -129,6 +131,8 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
       }
       view.token = data.token;
       $("pin-form").hidden = true;
+      $("pin-forgot").hidden = true;
+      $("pin-setup-open").hidden = true;
       $("pin-status").textContent = "Parent controls unlocked for up to five minutes.";
       $("tooth-controls").hidden = false;
       loadReward(view);

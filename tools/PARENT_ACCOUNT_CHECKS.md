@@ -36,3 +36,7 @@ Local harnesses verify application behavior; they do not prove live email delive
 7. Repeat the email-return journey in phone Safari/Chrome. Revisit redirect allowlist, email templates and expiry settings in Supabase if any step fails.
 
 No production account was created, password changed, email sent or PIN reset during this implementation pass. No SQL migration or consent activation is needed for this frontend change. Keep real credentials, email-link tokens and account identifiers out of this public document.
+
+## Operator feedback after PR #34
+
+The operator reported the fresh signup/confirmation/resend/welcome walkthrough worked, and password reset rejected the old password while accepting the new password. PIN recovery was also reported working, but first-PIN creation was discoverable only through an explorer vault and the header reset action failed on a no-PIN/no-family account. The independent-PIN setup follow-up addresses that gap; repeat its live check after rollout before closing item 1. These are operator-reported results, not a claim that this implementation pass independently changed credentials.
