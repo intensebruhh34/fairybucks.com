@@ -8,15 +8,17 @@ A versioned parent notice with a SHA-256 fingerprint of its text plus the public
 
 The pilot verification method is a signed parent consent form returned electronically to support@fairybucks.com. Section 312.5(b)(2)(i) lists returned signed forms among possible methods. The operator must actually review the current form and make reasonable efforts to verify the parent before using the private verification function. This code does not certify that an operator's review meets the legal standard. No new paid verification service, account or live message was created by this change.
 
-Child-profile inserts by API users are blocked without the family's current verified permission. Child-session creation and every child view/request/cancellation enforce the same check. Notice changes invalidate old permission. Withdrawal ends child sessions and pauses new profiles; parents retain existing-record review and account deletion. Ending a child session remains allowed. No real family's existing data is silently erased or grandfathered into verified permission.
+After explicit activation, child-profile inserts by API users are blocked without the family's current verified permission. Child-session creation and every child view/request/cancellation enforce the same check. Notice changes invalidate old permission. Withdrawal ends child sessions and pauses new profiles; parents retain existing-record review and account deletion. Ending a child session remains allowed. No real family's existing data is silently erased or grandfathered into verified permission.
 
 Child mode now calls the same narrowly scoped public RPC directly through fetch, with a publishable API key, no cookies and no referrer. It no longer downloads the Supabase SDK from jsDelivr. GitHub hosting and Supabase network/data processing remain; this does not eliminate provider privacy duties. Parent authentication still uses the SDK.
 
-## Deployment pause — important
+## Staged development — merging does not activate restrictions
 
-The migration seeds `notice_ready=false`. Applying it pauses new explorers and child mode, including previously created child sessions, until setup is ready and an operator verifies that family's form. It does not mark the site compliant. Do not apply this migration to the live development site until you are ready for that pause. Existing adult account review/deletion remains available.
+The frontend defaults `siteContact.parentPermissionEnabled=false`. It hides the inactive permission panel and preserves explorer creation and PIN-controlled child handoff without calling the new consent RPC. Thus the frontend can merge before the new migration is applied. This is development access, not verified consent and not a family launch.
 
-Keep the PR in draft while contacts and operational review are unfinished. Previous privacy/deletion migration/check results do not need repeating unless their SQL changes. For this stage, apply the new parent_consent migration and its separate rollback-only check only at the planned rollout.
+The database migration defaults both `notice_ready=false` and `enforcement_enabled=false`. Applying the foundation does not require a signed form or pause existing child sessions. Existing authentication, PIN, ownership, wallet and request checks remain in the core functions. No consent is fabricated or granted. Only the privileged activation script turns server enforcement on; browsers cannot change that setting. Once enabled, a frontend flag cannot bypass server enforcement.
+
+Previous privacy/deletion migration/check results do not need repeating unless their SQL changes. Apply the new parent_consent migration and separately run its rollback-only check to stage the database foundation. Do not run the operator activation or verification scripts yet. Keep public family invitations on hold until the checklist is complete.
 
 ## Operator checklist before activation
 
@@ -24,10 +26,10 @@ Keep the PR in draft while contacts and operational review are unfinished. Previ
 2. Finalize Privacy, the direct parent notice and the exact signed form. Identify every relevant provider, including the incoming-support mail provider, and the exact data/purposes. Review which disclosures are integral, and avoid optional/unrelated disclosures or ads. Review any further consent choices required by the actual processing arrangement.
 3. Confirm and retain appropriate written provider security assurances and processing terms. Inspect real project log/backup settings; document actual retention periods instead of guessing. Minimize request-body/error logging and restrict who can access logs.
 4. Adopt the written security/retention procedures in SECURITY_PRIVACY_OPERATIONS.md, assign a responsible operator and test restore/deletion handling. These are draft procedures, not evidence they have already been performed.
-5. Set siteContact.privacyNoticeReviewed=true only after that review. This hides the public draft banner; the server remains closed until separately activated.
+5. Set siteContact.privacyNoticeReviewed=true only after that review. This hides the public draft banner; it does not activate permission enforcement.
 6. Run `node tools/notice-hash.mjs` using the exact reviewed source. It must report contacts_complete=true and privacy_reviewed=true. Material changes require a new notice version and renewed verified permission. Retain the old notice text privately or in repository history so its fingerprint remains explainable.
 7. Apply supabase/migrations/20261115010000_parent_consent.sql, then separately run supabase/checks/parent_consent.sql. The check creates temporary-in-lifetime random test users and rolls all changes back; it does not approve existing parents.
-8. Fill and run supabase/operators/activate_parent_notice.sql ONLY after the checklist. It deliberately fails with blank placeholders. Activation revokes old child sessions; it does not verify any parent by itself.
+8. Fill and run supabase/operators/activate_parent_notice.sql ONLY after the checklist. It deliberately fails with blank placeholders. This sets server enforcement on and revokes old child sessions; it does not verify any parent by itself. Deploy siteContact.parentPermissionEnabled=true at the same reviewed cutover so parents see the verification workflow. After activation, keep enforcement enabled; do not use the development setting as a consent-withdrawal bypass.
 
 ## Manual pilot verification
 
@@ -46,6 +48,6 @@ Keep signed consent evidence only for the documented purpose of proving active p
 
 ## Validation
 
-Local database checks cover draft readiness, wrong version/hash, guardian assertion, request idempotency, privileged verification, direct-write/core-function denial, authenticated profile enforcement, wrong-family inserts, child-session access, changed notices, withdrawal, re-request and deletion cascades. Legacy fixture approvals exist only in the local PGlite harness; no real account is approved by migration. UI tests cover requested versus verified state, version/contact hash, print availability, stale responses, account switches and failures. Direct child API transport was checked read-only with a synthetic invalid token; no real child token or account credential was used.
+Local database checks cover usable staged development without fabricated consent, retained PIN/family checks, activation blocking existing unverified sessions, draft readiness, wrong version/hash, guardian assertion, request idempotency, privileged verification, direct-write/core-function denial, authenticated profile enforcement, wrong-family inserts, child-session access, changed notices, withdrawal, re-request and deletion cascades. Legacy fixture approvals exist only in the local PGlite harness; no real account is approved by migration. UI tests cover requested versus verified state, version/contact hash, print availability, stale responses, account switches and failures. Direct child API transport was checked read-only with a synthetic invalid token; no real child token or account credential was used.
 
 Final release checks still include real signed-form review, real parent/child flows with the live schema, provider assurances/settings, actual phone printing, public contacts and legal review. Never label this PR or a successful SQL check as COPPA certification.
