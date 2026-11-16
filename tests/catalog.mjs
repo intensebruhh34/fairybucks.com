@@ -28,6 +28,8 @@ const legacyExplorerCheck=process.argv.includes('--explorer-without-consent');
 const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||!f.includes('parent_consent'));
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
 if(legacyExplorerCheck){
+ await db.exec(readFileSync(root+'/supabase/checks/child_mode_readiness.sql','utf8'));
+ console.log('PASS child mode readiness: scope, parent-action denial, token lifecycle');
  await db.exec(readFileSync(root+'/supabase/checks/treasure_request_readiness.sql','utf8'));
  console.log('PASS treasure request readiness: reservations, decisions, captured prices, refunds and isolation');
   await db.exec(readFileSync(root+'/supabase/checks/tooth_reward_readiness.sql','utf8'));
@@ -38,6 +40,8 @@ if(legacyExplorerCheck){
 }
 await db.exec(readFileSync(root+'/supabase/checks/treasure_request_readiness.sql','utf8'));
 console.log('PASS treasure request readiness: reservations, decisions, captured prices, refunds and isolation');
+await db.exec(readFileSync(root+'/supabase/checks/child_mode_readiness.sql','utf8'));
+ console.log('PASS child mode readiness: scope, parent-action denial, token lifecycle');
 // Test-only permissions keep legacy regression fixtures exercising their original behavior.
 // Enable enforcement only in local regression fixtures; production defaults to staged development.
 await db.exec(`update private.fairybucks_privacy_release set notice_ready=true,enforcement_enabled=true;
