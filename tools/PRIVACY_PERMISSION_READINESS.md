@@ -11,7 +11,7 @@ Reviewed November 16, 2026. This is an implementation and operations draft, not 
 - Consent withdrawal ends child sessions; parent review and account deletion remain available.
 - Account deletion removes active family/auth data; provider logs, backups and emailed forms need their own handling.
 
-The repository contains the consent foundation, but earlier production checks reported its private release table missing. Merging a PR does not install a Supabase migration. Determine actual database state with supabase/checks/privacy_readiness_report.sql before deciding which installation step is needed.
+The operator installed the consent foundation on November 16, 2026, reported parent_consent.sql passed, and supplied a follow-up report showing the consent components INSTALLED. Website access remains STAGED. This verifies installation and the reported rollback check; it does not complete notice delivery or the provider/retention/security review.
 
 ## This PR
 
@@ -26,9 +26,9 @@ The repository contains the consent foundation, but earlier production checks re
 
 | Area | Current evidence | Required completion |
 | --- | --- | --- |
-| Database foundation | Repository migration exists; prior production missing-table error | Run the read-only report; install missing foundation components deliberately, then run parent_consent.sql |
+| Database foundation | Operator reported migration/check passed and report shows INSTALLED on November 16, 2026 | Installation verified; maintain staged settings until the remaining reviews and rehearsal are complete |
 | Notice delivery | Notice renders in the portal; no delivered-email record was found in the reviewed flow | Establish a direct-notice delivery and recordkeeping process before child data collection; a signup confirmation alone is not that notice |
-| Signed consent | Form and operator-only verifier are built | Rehearse receipt, parent/account matching, version/hash checking, verification, refusal and withdrawal with synthetic data |
+| Signed consent | Form/verifier are built; synthetic DB check reported passed; portal rehearsal paperwork added | Follow PARENT_NOTICE_REHEARSAL.md for email, printing, return, matching and cleanup; live process remains staged |
 | Email forwarding | Operator says support forwards to Gmail | Confirm the actual forwarding service, mailbox access and retention/trash/attachment handling |
 | Provider records | Supabase, GitHub Pages, Resend, jsDelivr and support email paths identified | Record actual project plans, regions where relevant, log/backup periods, deletion limits and provider safeguards; do not infer settings from defaults |
 | Retention | Public draft proposes pilot/form/support periods | Adopt and implement a purpose-based schedule, including inactive accounts and uncompleted permission requests; verify deletion beyond the active DB |
@@ -62,6 +62,6 @@ These support planning; the final applicability/process review must assess the a
 
 ## Validation limits and next action
 
-Isolated JavaScript tests reproduced acceptance of a mismatched-parent reply in the previous UI and passed with the change. They also check refresh/withdrawal, printable-form clearing, late replies and preserved development staging. The full Node/PGlite suite, the new read-only SQL report and a browser test were not run because the executor/browser were unavailable.
+Isolated JavaScript tests reproduced acceptance of a mismatched-parent reply in the previous UI and passed with the change. They also check refresh/withdrawal, printable-form clearing, late replies and preserved development staging. The full Node/PGlite suite and a browser test were not run in that session because the executor/browser were unavailable. The operator subsequently ran the read-only report and supplied INSTALLED results.
 
-Run the read-only report and review its rows. MISSING/REVIEW are installation/security findings to resolve, not a reason to turn on restrictions immediately. Step 6 remains open until installation, notices, provider/retention/security procedures and the permission rehearsal are complete.
+The report findings have been resolved through the reported installation/check. Complete the paperwork rehearsal in PARENT_NOTICE_REHEARSAL.md; a successful rehearsal is not a reason to turn on restrictions immediately. Step 6 remains open until installation, notices, provider/retention/security procedures and the permission rehearsal are complete.
