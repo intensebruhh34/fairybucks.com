@@ -11,7 +11,7 @@ create table auth.sessions(id uuid primary key,user_id uuid references auth.user
 create function auth.jwt() returns jsonb language sql as $$select current_setting('request.jwt.claims',true)::jsonb$$;
 create function auth.uid() returns uuid language sql as $$select (auth.jwt()->>'sub')::uuid$$;
 create table public.families(id uuid primary key default gen_random_uuid(),owner_id uuid references auth.users);
-create table public.child_profiles(id uuid primary key default gen_random_uuid(),family_id uuid references families,nickname text);
+create table public.child_profiles(id uuid primary key default gen_random_uuid(),family_id uuid references families,nickname text,age integer,gender text,created_at timestamptz default now());
 create table public.fairy_wallets(child_id uuid primary key references child_profiles,balance int,updated_at timestamptz default now());
 create table public.fairy_transactions(id uuid primary key default gen_random_uuid(),child_id uuid references child_profiles,amount int,description text,created_at timestamptz default now());
 create table public.lost_teeth(id uuid primary key default gen_random_uuid(),child_id uuid references child_profiles,lost_on date,created_at timestamptz default now());
@@ -51,6 +51,8 @@ await db.exec(readFileSync(root+'/supabase/checks/parent_pin_recovery.sql','utf8
 console.log('PASS email PIN recovery, single-use proofs, isolation and revocation');
 await db.exec(readFileSync(root+'/supabase/checks/account_deletion.sql','utf8'));
 console.log('PASS account deletion, PIN/recent-auth checks, atomic cleanup and family isolation');
+await db.exec(readFileSync(root+'/supabase/checks/edit_explorer.sql','utf8'));
+console.log('PASS explorer edits, optional details, conflict protection and two-explorer data separation');
 await db.exec(readFileSync(root+'/supabase/checks/parent_pin_setup.sql','utf8'));
 console.log('PASS independent first-PIN setup, no explorers, existing PIN protection and session checks');
 await db.exec(readFileSync(root+'/supabase/checks/parent_consent.sql','utf8'));
