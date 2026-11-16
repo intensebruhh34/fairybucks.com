@@ -270,11 +270,11 @@ const guide=parentGuide(()=>client,ownerId=>{
  $("signed-in").hidden=false;
  loadFamily(familyView);
 });
-const consent=parentConsent(()=>client,verified=>{
+const consent=parentConsent(()=>client,allowed=>{
  if(!familyView)return;
- familyView.permissionVerified=verified;
- if(familyView.profiles)$("profile-form").hidden=!verified;
- $("permission-handoff-note").hidden=verified;
+ familyView.permissionAllowed=allowed;
+ if(familyView.profiles)$("profile-form").hidden=!allowed;
+ $("permission-handoff-note").hidden=allowed;
 });
 const pinRecovery=parentPinRecovery(()=>client,target,()=>{
  hideFamily(); message(""); $("auth-area").hidden=true; $("new-password").hidden=true; $("loading").hidden=true;
@@ -417,7 +417,7 @@ async function loadProfiles(view){
   });
   $("profile-list").replaceChildren(...explorers);
   $("profile-status").textContent=explorers.length?"":"Your vault is ready. Add your first explorer below.";
-  $("profile-form").hidden=!view.permissionVerified;
+  $("profile-form").hidden=!view.permissionAllowed;
   showExplorer(view);
  }catch{
   if(view!==familyView)return;
@@ -507,7 +507,7 @@ async function handOverMagic(){
  const childId=new URLSearchParams(explorerHash().slice(1)).get("explorer");
  const unlock=wallet.unlockToken(childId);
  const button=$("hand-over-magic");
- if(!view?.permissionVerified){$("handoff-status").textContent="Review and verify Parent permission before opening child mode.";return;}
+ if(!view?.permissionAllowed){$("handoff-status").textContent="Review and verify Parent permission before opening child mode.";return;}
  if(!unlock || button.disabled)return;
  if(!window.confirm("Open this explorer’s child vault? This tab will sign out of the parent account. Returning to parent controls requires signing in again."))return;
  button.disabled=true;
