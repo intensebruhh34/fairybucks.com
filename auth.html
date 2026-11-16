@@ -56,10 +56,12 @@ body{display:block;padding:0}
 <button type="button" class="tab active" data-tab="login">Log in</button>
 <button type="button" class="tab" data-tab="signup">Sign up</button>
 <button type="button" class="tab" data-tab="forgot">Reset password</button>
+<button type="button" class="tab" data-tab="resend">Resend confirmation</button>
 </div>
 <form class="screen" id="login"><label for="login-email">Parent email</label><input id="login-email" type="email" autocomplete="email" required maxlength="254"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Sign in securely</button></form>
 <form class="screen" id="signup" hidden><label for="signup-email">Parent email</label><input id="signup-email" type="email" autocomplete="email" required maxlength="254"><label for="signup-password">Create a password (12+ characters)</label><input id="signup-password" type="password" autocomplete="new-password" minlength="12" required><button class="primary" type="submit">Create parent account</button><p class="muted">Only parents register. Children do not receive individual accounts.</p></form>
 <form class="screen" id="forgot" hidden><label for="forgot-email">Your parent email</label><input id="forgot-email" type="email" autocomplete="email" required maxlength="254"><button class="primary" type="submit">Email me a reset link</button></form>
+<form class="screen" id="resend" hidden><p>Missing your signup email, or did its link expire? Request another confirmation link. Check your spam folder and use the newest email.</p><label for="resend-email">Your parent email</label><input id="resend-email" type="email" autocomplete="email" required maxlength="254"><button class="primary" type="submit">Resend confirmation email</button><p class="muted">Already confirmed? Use Log in. For a forgotten password, use Reset password.</p></form>
 </div>
 <form id="new-password" hidden><h2 id="password-title">Set your parent password</h2><p class="muted">Only enter a password after opening a valid account invitation or recovery link.</p><label for="password-new">New password (12+ characters)</label><input id="password-new" type="password" autocomplete="new-password" minlength="12" required><label for="password-confirm">Confirm password</label><input id="password-confirm" type="password" autocomplete="new-password" minlength="12" required><button class="primary" type="submit">Save password</button></form>
 <section id="pin-recovery-panel" class="fairy-panel" hidden aria-labelledby="pin-recovery-title">
@@ -349,7 +351,7 @@ function hideFamily(){
  $("explorer-title").textContent="";
  $("explorer-shop").href="/#shop";
 }
-function tab(which){for(const t of document.querySelectorAll("[data-tab]"))t.classList.toggle("active",t.dataset.tab===which);for(const id of ["login","signup","forgot"])$(id).hidden=id!==which;$("auth-area").hidden=false;$("new-password").hidden=true;hideFamily();}
+function tab(which){for(const t of document.querySelectorAll("[data-tab]"))t.classList.toggle("active",t.dataset.tab===which);for(const id of ["login","signup","forgot","resend"])$(id).hidden=id!==which;$("auth-area").hidden=false;$("new-password").hidden=true;hideFamily();}
 function signed(user){
  hideFamily();
  $("auth-area").hidden=true;
@@ -467,10 +469,13 @@ async function initialize(){
  if(!cfg?.url||!/^sb_publishable_/.test(cfg.publishableKey||"")){$("loading").hidden=true;$("setup").hidden=false;return;}
  const params=new URLSearchParams(location.hash.slice(1));
  const search=new URLSearchParams(location.search);
- const type=params.get("type")||search.get("type")||"";
+ let type=params.get("type")||search.get("type")||"";
  const hasTokens=params.has("access_token")||search.has("code")||search.has("token_hash");
- if(!hasTokens && redirectChildSession())return;
- client=createClient(cfg.url,cfg.publishableKey,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
+ const linkError=["error","error_code","error_description"].some(key=>params.has(key)||search.has(key));
+ if(!hasTokens && !linkError && !type && redirectChildSession())return;
+ // Handle each callback once and use its returned session. An older saved session
+ // cannot make an expired/invalid confirmation or recovery link appear successful.
+ client=createClient(cfg.url,cfg.publishableKey,{auth:{detectSessionInUrl:false,autoRefreshToken:true,persistSession:true}});
  client.auth.onAuthStateChange((evt,session)=>{
   if(deletion.accountChanged(session?.user?.id))tab("login");
   if(pinRecovery.accountChanged(session?.user?.id))tab("login");
@@ -478,15 +483,20 @@ async function initialize(){
   if(evt==="SIGNED_OUT" || (familyView && session?.user.id!==familyView.ownerId))tab("login");
  });
  try{
+  if(linkError || (type && !hasTokens))throw Error("This email link expired or could not be verified. Use Resend confirmation or Reset password to request a new link.");
+  let callback=null;
   if(search.has("token_hash") && type){
-   const {error}=await client.auth.verifyOtp({token_hash:search.get("token_hash"),type});
-   if(error)throw error;
+   callback=await client.auth.verifyOtp({token_hash:search.get("token_hash"),type});
   }else if(search.has("code")){
-   const {error}=await client.auth.exchangeCodeForSession(search.get("code"));
-   // Already processed callbacks may have been consumed by the SDK.
-   if(error){const {data}=await client.auth.getSession();if(!data.session)throw error;}
+   callback=await client.auth.exchangeCodeForSession(search.get("code"));
+  }else if(params.has("access_token") && params.get("refresh_token")){
+   callback=await client.auth.setSession({access_token:params.get("access_token"),refresh_token:params.get("refresh_token")});
   }
-  const {data,error}=await client.auth.getSession();if(error)throw error;
+  if(hasTokens && (callback?.error || !callback?.data?.session)){
+   throw Error("This email link expired or could not be verified. Use Resend confirmation or Reset password to request a new link.");
+  }
+  if(!type && callback?.data?.redirectType)type=callback.data.redirectType;
+  const {data,error}=callback||await client.auth.getSession();if(error)throw error;
   if(hasTokens && data.session?.user){try{clearChildToken();}catch{ /* Storage may be disabled. */ }}
   history.replaceState(null,"",location.pathname+(hasTokens?"":explorerHash()));
   $("loading").hidden=true;
@@ -496,7 +506,7 @@ async function initialize(){
   else if(data.session?.user && hasTokens && !type){
    const proof=await client.rpc("fairybucks_recover_parent_pin");
    if(!proof.error && proof.data?.status==="ready")await pinRecovery.open();
-   else newPassword(true);
+   else signed(data.session.user);
   }
   else if(data.session?.user)signed(data.session.user);
   else {tab("login");if(hasTokens)message("This link expired or could not be verified. Request a new invitation or reset link.","error");}
@@ -537,7 +547,7 @@ async function handOverMagic(){
  }
 }
 async function submit(form,operation){
- const btn=form.querySelector("button[type=submit]");btn.disabled=true;message("Processing…");
+ const btn=form.querySelector("button[type=submit]");if(btn.disabled)return;btn.disabled=true;message("Processing…");
  try{await operation();}catch(e){message(e.message||"Something went wrong.","error");}finally{btn.disabled=false;}
 }
 for(const b of document.querySelectorAll("[data-tab]"))b.addEventListener("click",()=>{message("");tab(b.dataset.tab);});
@@ -546,7 +556,8 @@ for(const id of ["parent-faq","print-fairy-bucks"]){
   event.preventDefault(); $(id).open=true; $(id).scrollIntoView({behavior:"smooth",block:"start"});
  });
 }
-$("signup").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.signUp({email:$("signup-email").value.trim(),password:$("signup-password").value,options:{emailRedirectTo:target}});if(error)throw error;message("Check your email for a confirmation link. If an account already exists, use Log in or Reset password.","ok");});});
+$("signup").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {data,error}=await client.auth.signUp({email:$("signup-email").value.trim(),password:$("signup-password").value,options:{emailRedirectTo:target}});$("signup-password").value="";if(error)throw error;if(data?.session){signed(data.user);message("Your parent account is signed in.","ok");return;}message("Check your email for a confirmation link. Missing it? Choose Resend confirmation. If you already have an account, use Log in or Reset password.","ok");});});
+$("resend").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.resend({type:"signup",email:$("resend-email").value.trim(),options:{emailRedirectTo:target}});if(error)throw error;message("If this address has a signup awaiting confirmation, another email has been requested. Check your inbox and spam folder; use the newest link. Already confirmed? Use Log in or Reset password.","ok");});});
 $("login").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {data,error}=await client.auth.signInWithPassword({email:$("login-email").value.trim(),password:$("login-password").value});if(error)throw error;signed(data.user);message("Signed in successfully.","ok");});});
 $("forgot").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.resetPasswordForEmail($("forgot-email").value.trim(),{redirectTo:target});if(error)throw error;message("If that email has an account, you'll receive a reset link.","ok");});});
 $("new-password").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const pw=$("password-new").value;if(pw!==$("password-confirm").value)throw Error("Passwords don't match.");const {data,error}=await client.auth.updateUser({password:pw});if(error)throw error;signed(data.user);message("Password saved. You're signed in to your parent account.","ok");});});
