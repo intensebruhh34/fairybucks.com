@@ -4,7 +4,8 @@ create table private.fairybucks_privacy_release (
  singleton boolean primary key default true check(singleton),
  notice_version integer not null check(notice_version>0),
  notice_hash text not null check(notice_hash ~ '^[0-9a-f]{64}$'),
- notice_ready boolean not null default false
+ notice_ready boolean not null default false,
+ enforcement_enabled boolean not null default false
 );
 insert into private.fairybucks_privacy_release(singleton,notice_version,notice_hash,notice_ready)
  values(true,1,'242c2e941aa87237abacf56ee550d192f48def4d9c5988762ea744b1148a9db2',false);
@@ -41,6 +42,9 @@ returns boolean language plpgsql security definer set search_path='' as $$
 declare release private.fairybucks_privacy_release%rowtype;
 begin
  select * into release from private.fairybucks_privacy_release where singleton for share;
+ -- Staged development preserves the existing auth/PIN/family checks in the core functions.
+ -- This bypass does not record or imply verified parental consent.
+ if found and not release.enforcement_enabled then return true;end if;
  if not found or not release.notice_ready then return false;end if;
  perform 1 from private.fairybucks_parent_consents where parent_id=p_parent
   and notice_version=release.notice_version and notice_hash=release.notice_hash and status='verified' for share;
