@@ -27,8 +27,8 @@ update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`
 const files=readdirSync(root+'/supabase/migrations').sort();
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
 // Test-only permissions keep legacy regression fixtures exercising their original behavior.
-// Production migration defaults notice_ready=false and never verifies existing parents.
-await db.exec(`update private.fairybucks_privacy_release set notice_ready=true;
+// Enable enforcement only in local regression fixtures; production defaults to staged development.
+await db.exec(`update private.fairybucks_privacy_release set notice_ready=true,enforcement_enabled=true;
 insert into private.fairybucks_parent_consents(parent_id,notice_version,notice_hash,status,requested_at,verified_at,method,evidence_ref,reviewer)
 select u.id,r.notice_version,r.notice_hash,'verified',now(),now(),'signed_form','LOCAL-TEST-ONLY','Test fixture'
 from auth.users u cross join private.fairybucks_privacy_release r;`);
