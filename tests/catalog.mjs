@@ -28,6 +28,8 @@ const legacyExplorerCheck=process.argv.includes('--explorer-without-consent');
 const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||!f.includes('parent_consent'));
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
 if(legacyExplorerCheck){
+ await db.exec(readFileSync(root+'/supabase/checks/tooth_reward_readiness.sql','utf8'));
+ console.log('PASS reward readiness without staged consent tables');
  await db.exec(readFileSync(root+'/supabase/checks/edit_explorer.sql','utf8'));
  console.log('PASS explorer verification on a database without the staged consent migration');
  await db.close();process.exit(0);
@@ -48,6 +50,8 @@ console.log('PASS rollback checks: prices, valid/wrong/expired unlocks, family i
 await db.exec(readFileSync(root+'/supabase/checks/delivery_refunds.sql','utf8'));
 console.log('PASS delivery progression, stale updates, completion, family/PIN checks, duplicate refunds and child tracker');
 await db.exec(readFileSync(root+'/supabase/checks/adjustable_tooth_rewards.sql','utf8'));
+await db.exec(readFileSync(root+'/supabase/checks/tooth_reward_readiness.sql','utf8'));
+console.log('PASS reward readiness: new balances, limits, two explorers, original corrections, retry and access protection');
 console.log('PASS adjustable rewards, original corrections, replay and access checks');
 await db.exec(readFileSync(root+'/supabase/checks/hot_wheels_barbie.sql','utf8'));
 console.log('PASS new treasure mappings and protected purchase access');
