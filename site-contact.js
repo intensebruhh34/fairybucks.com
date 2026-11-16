@@ -1,13 +1,13 @@
 // Public contact settings. Never put credentials, private addresses or secret keys here.
-// Email-only public contact is intentional for the draft. Do not invent or publish personal details.
+// Operator-approved public business contact details. Update here when they change.
 export const siteContact = Object.freeze({
  supportEmail: 'support@fairybucks.com',
  privacyNoticeReviewed: false,
  // Development staging only. Enable with server enforcement at the reviewed launch cutover.
  parentPermissionEnabled: false,
- operatorName: '',
- mailingAddress: '',
- phone: ''
+ operatorName: 'ITS Security',
+ mailingAddress: 'P.O. Box 240\nWest Warren, MA 01092',
+ phone: '(774) 922-5011'
 });
 export const supportEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(siteContact.supportEmail) ? siteContact.supportEmail : '';
 export function renderContact(root = document) {
