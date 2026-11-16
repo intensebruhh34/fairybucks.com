@@ -1,6 +1,6 @@
 # Parent-permission foundation — not a compliance certification
 
-This stage builds toward treating COPPA as applicable. It does not claim that the site is compliant, that an arbitrary PO box qualifies, or that a checkbox/login/PIN is verified parental consent. Operator contact details, final notice, provider assurances, retention/security operations and the actual verification process still need review before family invitations.
+This stage builds toward treating COPPA as applicable. It does not claim that the site is compliant, that an arbitrary PO box qualifies, or that a checkbox/login/PIN is verified parental consent. The user supplied public operator contact details, now configured centrally. Final notice, provider assurances, retention/security operations and the actual verification process still need review before family invitations. Contact configuration alone does not establish business registration or satisfy all requirements.
 
 ## What is implemented
 
