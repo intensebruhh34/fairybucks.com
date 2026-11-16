@@ -1,16 +1,9 @@
 import { deliveryText } from '/delivery-stages.js';
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { childToken, clearChildToken, readChildRequests, storeChildRequests } from "/child-session.js";
 import { treasureIcon, treasureDescription } from "/treasure-catalog.js";
 
 const $ = id => document.getElementById(id);
 const config = window.FAIRYBUCKS_AUTH_CONFIG;
-const client = createClient(config.url, config.publishableKey, {
-  auth: {
-    persistSession: false, autoRefreshToken: false, detectSessionInUrl: false,
-    storageKey: "fairybucks-child-api"
-  }
-});
 const token = childToken();
 const pending = readChildRequests();
 const statusLabels = {
@@ -137,10 +130,14 @@ function closeVault(message) {
 }
 
 async function call(action, args = {}) {
-  const { data, error } = await client.rpc("fairybucks_child_action", {
-    p_token: token, p_action: action, ...args
+  const response = await fetch(config.url + '/rest/v1/rpc/fairybucks_child_action', {
+    method: 'POST', credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer',
+    headers: {apikey: config.publishableKey, 'Content-Type': 'application/json'},
+    body: JSON.stringify({p_token: token, p_action: action, ...args})
   });
-  if (error || !data) throw error || new Error("Vault unavailable");
+  if (!response.ok) throw new Error('Vault unavailable');
+  const data = await response.json();
+  if (!data) throw new Error('Vault unavailable');
   return data;
 }
 
@@ -159,6 +156,10 @@ async function load(message = "") {
   try {
     const data = await call("view");
     if (request !== viewRequest) return;
+    if (data.status === "permission_required") {
+      closeVault("Ask a grown-up to review parent permission in the Parent Portal.");
+      return;
+    }
     if (data.status === "expired") {
       closeVault("This vault session ended. Ask a grown-up to open it again.");
       return;
@@ -186,6 +187,10 @@ async function change(action, args, onResult) {
   $("child-status").textContent = "Saving…";
   try {
     const { status } = await call(action, args);
+    if (status === "permission_required") {
+      closeVault("Ask a grown-up to review parent permission in the Parent Portal.");
+      return;
+    }
     if (status === "expired") {
       closeVault("This vault session ended. Ask a grown-up to open it again.");
       return;

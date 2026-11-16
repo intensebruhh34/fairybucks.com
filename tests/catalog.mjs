@@ -26,6 +26,12 @@ insert into families(owner_id) select id from auth.users;
 update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`);
 const files=readdirSync(root+'/supabase/migrations').sort();
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
+// Test-only permissions keep legacy regression fixtures exercising their original behavior.
+// Enable enforcement only in local regression fixtures; production defaults to staged development.
+await db.exec(`update private.fairybucks_privacy_release set notice_ready=true,enforcement_enabled=true;
+insert into private.fairybucks_parent_consents(parent_id,notice_version,notice_hash,status,requested_at,verified_at,method,evidence_ref,reviewer)
+select u.id,r.notice_version,r.notice_hash,'verified',now(),now(),'signed_form','LOCAL-TEST-ONLY','Test fixture'
+from auth.users u cross join private.fairybucks_privacy_release r;`);
 const { catalog } = await import('data:text/javascript;base64,' + Buffer.from(readFileSync(root+'/treasure-catalog.js','utf8')).toString('base64'));
 const saved = (await db.query('select shop_key, name, fairy_price, category, description from treasures order by shop_key')).rows;
 assert.deepEqual(saved, catalog.map(t => ({shop_key:t.id,name:t.name,fairy_price:t.price,category:t.category,description:t.description})));
@@ -43,6 +49,10 @@ await db.exec(readFileSync(root+'/supabase/checks/parent_welcome_guide.sql','utf
 console.log('PASS welcome completion, persistence, isolation and session checks');
 await db.exec(readFileSync(root+'/supabase/checks/parent_pin_recovery.sql','utf8'));
 console.log('PASS email PIN recovery, single-use proofs, isolation and revocation');
+await db.exec(readFileSync(root+'/supabase/checks/account_deletion.sql','utf8'));
+console.log('PASS account deletion, PIN/recent-auth checks, atomic cleanup and family isolation');
+await db.exec(readFileSync(root+'/supabase/checks/parent_consent.sql','utf8'));
+console.log('PASS consent readiness, verified-only gates, version/hash checks, withdrawal and isolation');
 // Verify the migration leaves legacy request prices and balances intact.
 await db.exec(`insert into child_profiles(id,family_id,nickname) select '11111111-1111-4111-8111-111111111111',id,'Legacy' from families limit 1;
 insert into fairy_wallets values('11111111-1111-4111-8111-111111111111',42,now());
