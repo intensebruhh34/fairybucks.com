@@ -166,8 +166,8 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
       $("tooth-reward-amount").value = data.amount;
       view.rewardReady = true;
       $("reward-status").textContent = "Current family reward: " + data.amount + " FB per tooth.";
-    } catch { if (view === active && view.token === token) $("reward-status").textContent = "Couldn't load the reward. Try Reload reward setting."; }
-    finally { if (view === active) $("record-tooth").disabled = !view.rewardReady || view.saving; }
+    } catch { if (view === active && view.token === token && view.rewardRequest === request) $("reward-status").textContent = "Couldn't load the reward. Try Reload reward setting."; }
+    finally { if (view === active && view.token === token && view.rewardRequest === request) $("record-tooth").disabled = !view.rewardReady || view.saving; }
   }
 
   async function saveReward(event) {
@@ -338,7 +338,10 @@ export function explorerWallet(getClient, onUnlockChange = () => {}) {
       $("undo-tooth-id").replaceChildren();
       $("undo-tooth-id").disabled = false;
       active = childId ? { childId } : null;
-      if (active) loadWallet(active);
+      if (active) {
+        setSaving(active, false);
+        loadWallet(active);
+      }
     }
   };
 }
