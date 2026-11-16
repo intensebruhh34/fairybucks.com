@@ -15,9 +15,26 @@ begin
  insert into public.child_profiles(id,family_id,nickname) values(c_a,f_a,'Consent fixture A'),(c_b,f_b,'Consent fixture B');
  insert into private.parent_pin_security(parent_id,pin_hash) values(a,extensions.crypt('111111',extensions.gen_salt('bf',4)));
  select notice_hash,notice_version into hash,v from private.fairybucks_privacy_release;
- update private.fairybucks_privacy_release set notice_ready=false;
+ -- Merging/applying the foundation keeps development usable until explicit operator activation.
+ update private.fairybucks_privacy_release set notice_ready=false,enforcement_enabled=false;
+ grant insert on public.child_profiles to authenticated;
  claims:=jsonb_build_object('sub',a,'session_id',s_a);
  perform set_config('request.jwt.claims',claims::text,true);perform set_config('role','authenticated',true);
+ insert into public.child_profiles(family_id,nickname) values(f_a,'Staged development fixture');
+ unlock:=public.fairybucks_parent_pin('111111',false)->>'token';
+ token:=public.fairybucks_start_child_session(c_a,unlock);
+ if token is null then raise exception 'Staging blocked existing handoff';end if;
+ if public.fairybucks_start_child_session(c_a,repeat('0',64)) is not null then raise exception 'Staging bypassed PIN';end if;
+ unlock:=public.fairybucks_parent_pin('111111',false)->>'token';
+ begin perform public.fairybucks_start_child_session(c_b,unlock);raise exception 'Staging bypassed family ownership';exception when insufficient_privilege then null;end;
+ perform set_config('role','anon',true);
+ if public.fairybucks_child_action(token)->>'status'<>'active' then raise exception 'Staging blocked child view';end if;
+ perform set_config('role','none',true);
+ if exists(select 1 from private.fairybucks_parent_consents where parent_id=a) then raise exception 'Staging fabricated consent';end if;
+ update private.fairybucks_privacy_release set enforcement_enabled=true;
+ perform set_config('role','anon',true);
+ if public.fairybucks_child_action(token)->>'status'<>'permission_required' then raise exception 'Activation retained unverified child access';end if;
+ perform set_config('role','authenticated',true);
  if public.fairybucks_parent_consent()->>'status'<>'setup_pending' then raise exception 'Draft notice allowed request';end if;
  if public.fairybucks_parent_consent('request',v,hash,true)->>'status'<>'setup_pending' then raise exception 'Draft request accepted';end if;
  begin perform public.fairybucks_start_child_session(c_a,repeat('0',64));raise exception 'Unverified handoff allowed';exception when insufficient_privilege then null;end;
