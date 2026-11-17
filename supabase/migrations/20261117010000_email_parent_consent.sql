@@ -210,7 +210,7 @@ grant execute on function public.fairybucks_email_permission(text,uuid,uuid,inte
  to service_role;
 -- Email changes invalidate previously verified email permission at the child boundary too.
 create or replace function private.fairybucks_child_permission(p_parent uuid)
-returns boolean language plpgsql security definer set search_path='' as $
+returns boolean language plpgsql security definer set search_path='' as $$
 declare release private.fairybucks_privacy_release%rowtype;c private.fairybucks_parent_consents%rowtype;
 begin
  select * into release from private.fairybucks_privacy_release where singleton for share;
@@ -226,7 +226,7 @@ begin
     and r.notice_version=release.notice_version and r.notice_hash=release.notice_hash and r.confirmation_sent_at is not null);
  end if;
  return true;
-end $;
+end $$;
 revoke all on function private.fairybucks_child_permission(uuid) from public,anon,authenticated,service_role;
 notify pgrst,'reload schema';
 commit;
