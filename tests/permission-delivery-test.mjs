@@ -29,7 +29,7 @@ const handler=createRehearsalHandler({env:key=>settings[key],crypto:webcrypto,at
   return Response.json({id:'TEST-MAIL-ID'},{status:mailFail?503:200});
  }});
 const request=(body,headers={},method='POST')=>new Request('https://function.example.test',{
- method,headers:{Origin:'https://fairybucks.com',Authorization:'Bearer a.'+btoa(JSON.stringify({session_id:session}))+'.c',...headers},
+ method,headers:{Origin:'https://fairybucks.com',Authorization:'Bearer a.'+btoa(JSON.stringify({session_id:session})).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'')+'.c',...headers},
  ...(method==='POST'?{body:JSON.stringify(body)}:{})
 });
 let r=await handler(request({action:'request',acknowledged:true}));
