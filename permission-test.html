@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<title>Test permission emails · Fairy Bucks</title><link rel="stylesheet" href="/vault-theme.css">
+<style>.test-page{max-width:700px;margin:auto;line-height:1.6}.test-banner{border:2px solid #a77c36;border-radius:12px;background:#fff0c6;padding:16px}.test-page label{display:block;margin-top:16px}.test-page input[type=email],.test-page input[type=password]{width:100%;box-sizing:border-box;padding:12px;border:1px solid #a77c36;border-radius:9px;font:inherit}.test-actions{display:flex;gap:14px;flex-wrap:wrap;margin:20px 0}.test-page button:disabled{opacity:.6}</style></head>
+<body><main class="fairy-page"><header class="fairy-header"><a class="nav-button" href="/auth.html">Parent Portal</a><h1>Email delivery test</h1></header>
+<div class="fairy-content test-page">
+<p class="test-banner"><strong>TEST ONLY — no parental consent is recorded.</strong> This checks email delivery and account/link matching. It does not enable child mode, change balances or authorize collection. Only the privately configured test parent inbox can use it.</p>
+<p id="test-status" role="status" aria-live="polite">Preparing the test…</p>
+<form id="test-login" hidden><p>Sign in to the parent account chosen for this test.</p>
+<label for="test-email">Parent email</label><input id="test-email" type="email" autocomplete="email" maxlength="254" required>
+<label for="test-password">Password</label><input id="test-password" type="password" autocomplete="current-password" required>
+<div class="test-actions"><button type="submit" class="fairy-action">Sign in</button></div>
+<p><a href="/auth.html">Forgot your password?</a> Reset it there, then reopen this test page or email.</p></form>
+<section id="test-notice" hidden><p id="test-account"></p>
+<details><summary>Preview the planned parent notice</summary><div id="test-copy"></div><p><a href="/privacy.html">Privacy draft</a></p></details>
+<form id="test-action-form">
+<label><input id="test-acknowledge" type="checkbox" required> I understand this is a delivery rehearsal, not consent or activation.</label>
+<div class="test-actions"><button id="test-send" type="submit" class="fairy-action">Email me a test notice</button></div>
+</form></section>
+<div class="test-actions"><button type="button" id="test-retry" hidden>Check again</button><button type="button" id="test-switch" hidden>Sign out to switch accounts</button></div>
+<p>There is at most one new notice/confirmation pair per test parent per UTC day. Repeated requests retry the same message. No children's information should be entered or emailed for this test.</p>
+<p><a href="/auth.html">Return to Parent Portal</a></p>
+</div></main><script src="/auth-config.js"></script><script type="module" src="/permission-test.js"></script></body></html>
