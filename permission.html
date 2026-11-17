@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
+<title>Parent permission · Fairy Bucks</title><link rel="stylesheet" href="/vault-theme.css">
+<style>.permission-page{max-width:700px;margin:auto;line-height:1.6}label{display:block;margin-top:16px}input[type=email],input[type=password]{display:block;width:100%;box-sizing:border-box;padding:12px;font:inherit;border:1px solid #a77c36;border-radius:9px;background:#fffdf6}.permission-actions{display:flex;flex-wrap:wrap;gap:14px;margin:20px 0}button:disabled{opacity:.6}address{white-space:pre-line;font-style:normal}</style>
+</head><body><main class="fairy-page">
+<header class="fairy-header"><a class="nav-button" href="/auth.html">Parent Portal</a><h1>Parent permission</h1></header>
+<div class="fairy-content permission-page">
+<p id="permission-status" role="status" aria-live="polite">Checking your permission link…</p>
+<form id="permission-login" hidden>
+<p>Sign in to the parent account that received this email. This permission link does not sign you in.</p>
+<label for="permission-email">Parent email</label><input id="permission-email" type="email" autocomplete="email" maxlength="254" required>
+<label for="permission-password">Password</label><input id="permission-password" type="password" autocomplete="current-password" required>
+<p class="permission-actions"><button type="submit" class="fairy-action">Sign in</button></p>
+<p><a href="/auth.html">Forgot your password?</a> After resetting it, reopen your permission email.</p>
+</form>
+<section id="permission-notice" hidden>
+<p id="permission-account"></p>
+<p data-contact-field="operatorName">Fairy Bucks is operated by <span data-contact="operatorName"></span>.</p>
+<address data-contact="mailingAddress"></address><p>Phone: <span data-contact="phone"></span></p>
+<p data-support-email></p><div id="permission-copy"></div>
+<p><a href="/privacy.html">Full privacy notice</a> · <a href="/support.html">Parent help</a></p>
+<form id="permission-approve" hidden>
+<label><input id="permission-guardian" type="checkbox" required> I am the parent or legal guardian. I have read this notice and Privacy, and consent to the described collection and use for our family vault. I understand that I can withdraw permission and request deletion.</label>
+<p>This does not authorize targeted advertising or unrelated disclosures. Opening this page does not give permission.</p>
+<div class="permission-actions"><button type="submit" id="permission-submit" class="fairy-action">I give permission</button></div>
+</form>
+</section>
+<div class="permission-actions"><button type="button" id="permission-retry" hidden>Check again / retry confirmation</button><button type="button" id="permission-switch" hidden>Sign out to use another parent account</button></div>
+<p><a href="/auth.html">Return to Parent Portal</a></p>
+</div></main><script src="/auth-config.js"></script><script type="module" src="/permission-page.js"></script></body></html>
