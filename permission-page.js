@@ -12,7 +12,7 @@ const valid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(requestId||'')
 let client=null,generation=0,busy=false,canApprove=false,owner=null,hash=null;
 function hide(){
  canApprove=false;$('permission-approve').hidden=true;$('permission-notice').hidden=true;
- $('permission-login').hidden=true;$('permission-retry').hidden=true;$('permission-guardian').checked=false;
+ $('permission-login').hidden=true;$('permission-retry').hidden=true;$('permission-switch').hidden=true;$('permission-guardian').checked=false;
  $('permission-account').textContent='';
 }
 async function check(action='inspect'){
@@ -23,17 +23,17 @@ async function check(action='inspect'){
   const {data:auth,error:authError}=await client.auth.getUser();
   if(current!==generation)return;
   if(authError||!auth.user){hide();$('permission-login').hidden=false;$('permission-status').textContent='Sign in to review your permission email.';return;}
-  owner=auth.user.id;
+  owner=auth.user.id;$('permission-switch').hidden=false;
   const {data,error}=await client.functions.invoke('parent-permission-email',{
    body:{action,requestId,token,guardian:action==='approve'&&$('permission-guardian').checked}
   });
   if(current!==generation)return;
   if(error||!data||data.parent_id!==owner)throw Error('Permission unavailable');
   if(data.version!==parentNotice.version||data.notice_hash!==hash){
-   hide();$('permission-status').textContent='This notice changed or email permission is not ready. Return to the Parent Portal for a new email.';return;
+   hide();$('permission-switch').hidden=false;$('permission-status').textContent='This notice changed or email permission is not ready. Return to the Parent Portal for a new email.';return;
   }
   if(!['requested','confirming','email_retry','verified'].includes(data.status)){
-   hide();$('permission-status').textContent='This link is expired, withdrawn or belongs to another parent account. Return to the portal for a new email.';return;
+   hide();$('permission-switch').hidden=false;$('permission-status').textContent='This link is expired, withdrawn or belongs to another parent account. Return to the portal for a new email.';return;
   }
   $('permission-login').hidden=true;$('permission-notice').hidden=false;
   $('permission-account').textContent='Signed in as '+auth.user.email;
@@ -65,7 +65,7 @@ $('permission-retry').addEventListener('click',()=>check('status'));
 $('permission-switch').addEventListener('click',async()=>{
  if(busy||!client)return;++generation;hide();
  const {error}=await client.auth.signOut({scope:'local'});
- $('permission-login').hidden=Boolean(error);
+ $('permission-login').hidden=Boolean(error);$('permission-switch').hidden=!error;
  $('permission-status').textContent=error?'Could not sign out. Try again.':'Sign in to the parent account that received this email.';
 });
 async function initialize(){

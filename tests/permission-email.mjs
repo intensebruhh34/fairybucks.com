@@ -83,3 +83,49 @@ const checkEmailHandler=async function checkEmailHandler(source,notice,contact){
  return 'PASS email handler: staging/auth/origin, full notice, account binding, explicit approval, confirmation, idempotency and failed-send protection';
 };
 console.log(await checkEmailHandler(readFileSync(new URL('supabase/functions/parent-permission-email/index.ts',root),'utf8'),parentNotice,siteContact));
+
+const checkApprovalPage=async function checkApprovalPage(source,notice,contact){
+ const expect=(v,m)=>{if(!v)throw Error(m);};
+ const rid='33333333-3333-4333-8333-333333333333';
+ const flush=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
+ function setup(){
+  const nodes=new Map(),make=()=>({hidden:true,disabled:false,checked:false,value:'',textContent:'',children:[],events:{},
+   append(...x){this.children.push(...x);},replaceChildren(...x){this.children=x;},addEventListener(n,f){this.events[n]=f;},querySelector(){return {disabled:false};}});
+  const $=id=>{if(!nodes.has(id))nodes.set(id,make());return nodes.get(id);};
+  const state={calls:[],owner:'owner',status:'requested',fail:false,history:[],authHandler:null};
+  const client={auth:{
+   async getUser(){return state.authHandler?state.authHandler():{data:{user:state.owner?{id:state.owner,email:'parent@example.test'}:null}};},
+   onAuthStateChange(f){state.authChanged=f;},async signInWithPassword(){state.owner='owner';return {};},
+   async signOut(){state.owner=null;state.authChanged('SIGNED_OUT',null);return {};}
+  },functions:{async invoke(name,args){
+   state.calls.push(args.body);if(state.fail)throw Error('network');
+   return {data:{status:state.status,parent_id:state.owner,version:notice.version,notice_hash:'hash'}};
+  }}};
+  const params=class{constructor(v){this.p=Object.fromEntries(v.split('&').map(p=>p.split('=')));}get(k){return this.p[k]||null;}};
+  const api=new Function('createClient','parentNotice','siteContact','renderContact','parentNoticeHash','document','location','history','window','URLSearchParams',
+    source.replace(/^import .+;$/gm,'')+'\nreturn {check};')(
+   ()=>client,notice,{...contact,parentPermissionEnabled:true,privacyNoticeReviewed:true},()=>{},async()=>'hash',
+   {getElementById:$,createElement:make},
+   {hash:'#request='+rid+'&token='+'0'.repeat(64),pathname:'/permission.html'},
+   {replaceState(...x){state.history.push(x);}},
+   {FAIRYBUCKS_AUTH_CONFIG:{url:'https://example.test',publishableKey:'sb_publishable_fixture'}},params);
+  return {api,$,state,client};
+ }
+ let s=setup();await flush();
+ expect(s.state.history.length===1&&s.state.history[0][2]==='/permission.html','Token fragment was retained');
+ expect(s.state.calls.length===1&&s.state.calls[0].action==='inspect','Opening link approved permission');
+ expect(!s.$('permission-approve').hidden,'Valid notice did not expose explicit approval');
+ s.$('permission-approve').events.submit({preventDefault(){}});expect(s.state.calls.length===1,'Unchecked approval submitted');
+ s.$('permission-guardian').checked=true;await s.$('permission-approve').events.submit({preventDefault(){}});
+ expect(s.state.calls.at(-1).action==='approve'&&s.state.calls.at(-1).guardian===true,'Explicit approval absent');
+ s.state.fail=true;await s.api.check();
+ expect(!s.$('permission-retry').hidden&&s.$('permission-approve').hidden,'Network failure left approval active or retry hidden');
+ s.state.fail=false;s.state.status='invalid_link';await s.api.check();
+ expect(!s.$('permission-switch').hidden&&s.$('permission-approve').hidden,'Wrong-account link hid account switch');
+ await s.$('permission-switch').events.click();expect(!s.$('permission-login').hidden,'Sign-out did not show parent sign-in');
+ s=setup();await flush();let resolve;s.state.authHandler=()=>new Promise(r=>resolve=r);
+ const pending=s.api.check();s.state.authChanged('SIGNED_OUT',null);resolve({data:{user:{id:'owner',email:'parent@example.test'}}});await pending;
+ expect(s.$('permission-approve').hidden&&s.$('permission-account').textContent==='','Late account lookup restored approval');
+ return 'PASS approval page: fragment removal, no automatic approval, affirmative consent, failure recovery, account switching and stale replies';
+};
+console.log(await checkApprovalPage(readFileSync(new URL('permission-page.js',root),'utf8'),parentNotice,siteContact));
