@@ -47,7 +47,7 @@ body{display:block;padding:0}
 #edit-profile-cancel{margin-top:12px}
 #consent-rehearsal-email{width:100%;box-sizing:border-box;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6;resize:vertical}
 #consent-request-form input[type=checkbox]{width:auto;margin-right:8px}
-@media print{body>*{display:none!important}#consent-print{display:block!important;color:#000;background:#fff;font:11pt/1.4 Georgia,serif;padding:0}#consent-print h1{font-size:18pt;color:#000}#consent-print h2{font-size:13pt;break-after:avoid}#consent-print p{orphans:3;widows:3;overflow-wrap:anywhere}@page{size:letter;margin:.6in}}
+
 </style></head><body><main class="fairy-page">
 <header class="fairy-header"><a class="nav-button" href="/">← Magical Home</a><h1>🔐 Parent Portal</h1></header>
 <div class="fairy-content portal-body">
@@ -116,22 +116,16 @@ body{display:block;padding:0}
 <button type="button" id="welcome-retry" hidden>Try again</button>
 </section>
 <details id="consent-rehearsal-panel" class="fairy-panel" hidden>
-<summary>Parent permission rehearsal (test only)</summary>
-<p>Preview the planned notice email and print a test consent form. Use your own test inbox and synthetic details. This does not submit a permission request or verify an account.</p>
-<p>The privacy notice and provider/retention procedures are still being reviewed. Keep this paperwork for rehearsal; it is not ready for pilot invitations.</p>
-<button type="button" id="consent-rehearsal-preview">Preview test notice email</button>
-<label for="consent-rehearsal-email">Rehearsal email draft — select and copy to your own email app</label>
-<textarea id="consent-rehearsal-email" rows="16" readonly spellcheck="false"></textarea>
-<p id="consent-rehearsal-status" role="status" aria-live="polite"></p>
-<button type="button" id="consent-rehearsal-print" disabled>Print test consent form</button>
-<p>After printing, confirm the form says REHEARSAL ONLY, uses a synthetic account reference, and matches the notice version/reference in the email draft.</p>
+<summary>Preview email permission (not active yet)</summary>
+<p>We are replacing the signed-form process with email permission. This preview sends no email, records no permission and keeps development testing available.</p>
+<label for="consent-rehearsal-email">Planned parent notice</label>
+<textarea id="consent-rehearsal-email" rows="12" readonly spellcheck="false"></textarea>
 </details>
 <section id="parent-consent-panel" class="fairy-panel" hidden aria-labelledby="consent-title">
 <h2 id="consent-title">Parent permission</h2>
 <p id="consent-status" role="status" aria-live="polite"></p>
 <details><summary>Read the parent notice</summary><div id="consent-copy"></div><p><a href="/privacy.html">Full privacy notice</a> · <a href="/support.html">Support and privacy requests</a></p></details>
-<form id="consent-request-form" hidden><label><input type="checkbox" id="consent-guardian" required> I am the parent or legal guardian. I have read the parent notice and Privacy, and want to request verification for the described family-vault use.</label><p>This request does not enable child mode. A returned signed form must be reviewed first.</p><button type="submit" id="consent-request">Request parent-permission verification</button></form>
-<button type="button" id="consent-print-button" hidden>Print parent consent form</button>
+<form id="consent-request-form" hidden><label><input type="checkbox" id="consent-guardian" required> I am the parent or legal guardian. I have read the parent notice and Privacy, and want a permission email for the described family-vault use.</label><p>Requesting an email does not grant permission. Read the email and approve on its notice page; we will then send a separate confirmation. No printed form or signature is needed.</p><button type="submit" id="consent-request">Send permission email</button></form>
 <button type="button" id="consent-refresh">Refresh permission status</button>
 <button type="button" id="consent-withdraw" hidden>Withdraw parent permission</button>
 <p>You can review existing records or use Delete account and family data without granting child-mode permission.</p>
@@ -272,7 +266,6 @@ body{display:block;padding:0}
 <p class="links"><a id="portal-shop" href="/#shop">Explore Treasures</a></p><p class="footer">A Little Magic, A Lot of Treasure ✨</p>
 </div>
 </main>
-<section id="consent-print" hidden aria-label="Printable parent consent form"></section>
 <script src="/auth-config.js"></script>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";

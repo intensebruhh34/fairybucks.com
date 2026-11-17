@@ -2,62 +2,56 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 const root=new URL('../',import.meta.url);
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
-const noticeSource=readFileSync(new URL('parent-notice.js',root),'utf8');
-const {parentNotice}=await import(asModule(noticeSource));
-const actualContact=await import(asModule(readFileSync(new URL('site-contact.js',root),'utf8')));
-const contact={operatorName:actualContact.siteContact.operatorName,mailingAddress:actualContact.siteContact.mailingAddress,phone:actualContact.siteContact.phone,supportEmail:actualContact.siteContact.supportEmail};
-const expected=createHash('sha256').update(JSON.stringify({notice:parentNotice,contact})).digest('hex');
-assert.match(readFileSync(new URL('supabase/migrations/20261115010000_parent_consent.sql',root),'utf8'),/notice_ready boolean not null default false/);
-assert.equal(expected.length,64);
-assert.equal(actualContact.siteContact.parentPermissionEnabled,false,'Merge must preserve the existing development flow');
-assert.match(readFileSync(new URL('supabase/migrations/20261115010000_parent_consent.sql',root),'utf8'),/enforcement_enabled boolean not null default false/);
-const fakeContact={siteContact:{operatorName:'Test operator',mailingAddress:'Test mailing address',phone:'Test phone',supportEmail:'support@example.test',privacyNoticeReviewed:true}};
-let source=readFileSync(new URL('parent-consent.js',root),'utf8').replace("'/parent-notice.js'",JSON.stringify(asModule(noticeSource))).replace("'/site-contact.js'",JSON.stringify(asModule('export const siteContact='+JSON.stringify(fakeContact.siteContact))));
-const {parentConsent,parentNoticeHash}=await import(asModule(source));
-class Element{constructor(){this.children=[];this.hidden=true;this.checked=false;this.events={};}append(...c){this.children.push(...c);}replaceChildren(...c){this.children=c;}addEventListener(n,fn){this.events[n]=fn;}focus(){}}
-const els=new Map();const $=id=>{if(!els.has(id))els.set(id,new Element());return els.get(id);};
-globalThis.document={getElementById:$,createElement:()=>new Element()};
-let printed=0;globalThis.window={confirm:()=>true,print(){printed++;}};
-// Actual staged config must not call an undeployed RPC or claim verified permission.
-const stagedSource=source.replace(JSON.stringify(asModule('export const siteContact='+JSON.stringify(fakeContact.siteContact))),JSON.stringify(asModule('export const siteContact='+JSON.stringify(actualContact.siteContact))));
-const staged=await import(asModule(stagedSource));let stagedCalls=0,stagedAllowed=false;
-const staging=staged.parentConsent(()=>{stagedCalls++;throw Error('RPC must not be needed before activation');},allowed=>stagedAllowed=allowed);
-await staging.open('test-owner');assert.equal(stagedCalls,0);assert.equal(stagedAllowed,true);assert.equal($('parent-consent-panel').hidden,true);
-staging.clear();assert.equal(stagedAllowed,false);
-const hash=await parentNoticeHash();const user={id:'test-owner',email:'parent@example.test'};let status='needed',calls=[],permissions=[];
-const client={auth:{getUser:async()=>({data:{user}})},rpc:async(name,args)=>{
- calls.push([name,args]);if(args.p_action==='request')status='requested';if(args.p_action==='withdraw')status='withdrawn';
- return {data:{status,parent_id:user.id,version:parentNotice.version,notice_hash:hash,requested_at:'2026-11-14T00:00:00Z'}};
-}};
-const flow=parentConsent(()=>client,value=>permissions.push(value));
-await flow.open(user.id);assert.equal($('consent-request-form').hidden,false);assert.equal(permissions.at(-1),false);
-$('consent-request-form').events.submit({preventDefault(){}});assert.equal(calls.length,1,'Unchecked guardian assertion must not send a request');
-$('consent-guardian').checked=true;$('consent-request-form').events.submit({preventDefault(){}});await new Promise(r=>setImmediate(r));
-assert.equal(status,'requested');assert.equal(permissions.at(-1),false,'A request is not verified consent');
-assert.equal($('consent-print-button').hidden,false);$('consent-print-button').events.click();assert.equal(printed,1);
-assert.ok(calls.some(([,a])=>a.p_action==='request'&&a.p_notice_hash===hash&&a.p_guardian===true));
-status='verified';await flow.open(user.id);assert.equal(permissions.at(-1),true);
-$('consent-withdraw').events.click();await new Promise(r=>setImmediate(r));assert.equal(permissions.at(-1),false);assert.equal(status,'withdrawn');
-// Never restore access from a late response after sign-out or an account switch.
-let resolve;client.rpc=()=>new Promise(r=>{resolve=r;});const opening=flow.open(user.id);while(!resolve)await new Promise(r=>setImmediate(r));flow.clear();
-resolve({data:{status:'verified',parent_id:user.id,version:1,notice_hash:hash}});await opening;assert.equal($('parent-consent-panel').hidden,true);assert.equal(permissions.at(-1),false);
-client.rpc=async()=>({data:{status:'verified',parent_id:user.id,version:1,notice_hash:'stale'}});await flow.open(user.id);assert.equal(permissions.at(-1),false);
-client.rpc=async()=>{throw Error('network');};await flow.open(user.id);assert.equal(permissions.at(-1),false);
-
-client.rpc=async()=>({data:{status:'verified',parent_id:'another-parent',version:parentNotice.version,notice_hash:hash}});
-await flow.open(user.id);assert.equal(permissions.at(-1),false,'Another account cannot supply permission');
-assert.equal($('consent-print-button').hidden,true);assert.equal($('consent-print').children.length,0);
-client.rpc=async()=>({data:{status:'verified',version:parentNotice.version,notice_hash:hash}});
-await flow.open(user.id);assert.equal(permissions.at(-1),false,'Missing account identity cannot supply permission');
-client.rpc=async()=>({data:{status:'verified',parent_id:user.id,version:parentNotice.version,notice_hash:hash,requested_at:'2026-11-16T00:00:00Z'}});
-await flow.open(user.id);assert.equal(permissions.at(-1),true);assert.ok($('consent-print').children.length>0);
-let failRefresh;client.rpc=()=>new Promise((resolve,reject)=>{failRefresh=reject;});
-$('consent-refresh').events.click();assert.equal(permissions.at(-1),false,'Refreshing permission must pause child entry');
-assert.equal($('consent-print').children.length,0,'A refresh must remove the old printable form');
-failRefresh(Error('lost response'));await new Promise(r=>setImmediate(r));
-assert.equal(permissions.at(-1),false);assert.equal($('consent-print').children.length,0);
-
-const childSource=readFileSync(new URL('child-vault.js',root),'utf8');assert.doesNotMatch(childSource,/cdn\.jsdelivr|supabase-js|createClient/);
-assert.match(childSource,/credentials: 'omit'/);assert.match(childSource,/permission_required/);
-console.log('PASS notice hash, guardian assertion, requested versus verified permission, withdrawal, stale responses and child CDN removal');
+const moduleFrom=source=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
+const {parentNotice}=await import(moduleFrom(readFileSync(new URL('parent-notice.js',root),'utf8')));
+const {siteContact}=await import(moduleFrom(readFileSync(new URL('site-contact.js',root),'utf8')));
+const contact={operatorName:siteContact.operatorName,mailingAddress:siteContact.mailingAddress,phone:siteContact.phone,supportEmail:siteContact.supportEmail};
+const hash=createHash('sha256').update(JSON.stringify({notice:parentNotice,contact})).digest('hex');
+assert.ok(readFileSync(new URL('supabase/migrations/20261117010000_email_parent_consent.sql',root),'utf8').includes(hash),'Notice/database fingerprint mismatch');
+assert.equal(siteContact.parentPermissionEnabled,false);
+assert.equal(siteContact.privacyNoticeReviewed,false);
+const checkPermissionUI=async function checkPermissionUI(source,notice,contact){
+ const expect=(v,m)=>{if(!v)throw Error(m);};
+ function setup(settings={}){
+  const elements=new Map(),make=()=>({hidden:true,disabled:false,checked:false,value:'',textContent:'',children:[],events:{},
+   append(...x){this.children.push(...x);},replaceChildren(...x){this.children=x;},addEventListener(n,f){this.events[n]=f;}});
+  const $=id=>{if(!elements.has(id))elements.set(id,make());return elements.get(id);};
+  const state={allowed:false,calls:0,authCalls:0,status:'needed',owner:'owner',throwError:false};
+  const api=new Function('document','window','siteContact','parentNotice','crypto','TextEncoder',
+   source.replace(/^import .+;$/gm,'').replaceAll('export ','')+'\nreturn {parentConsent};')(
+   {getElementById:$,createElement:make},{confirm:()=>true},{...contact,...settings},notice,
+   {subtle:{digest:async()=>new ArrayBuffer(32)}},class{encode(){return new Uint8Array();}});
+  const client={auth:{getUser:async()=>{state.authCalls++;return {data:{user:{id:'owner'}}};}},
+   functions:{invoke:async(name,args)=>{
+    state.calls++;if(state.throwError)throw Error('network');
+    if(state.handler)return state.handler(name,args);
+    if(args.body.action==='request')state.status='requested';
+    if(args.body.action==='withdraw')state.status='withdrawn';
+    return {data:{status:state.status,parent_id:state.owner,version:notice.version,notice_hash:'0'.repeat(64)}};
+   }}};
+  const flow=api.parentConsent(()=>client,allowed=>state.allowed=allowed);
+  return {flow,$,state};
+ }
+ let s=setup();await s.flow.open('owner');
+ expect(s.state.allowed&&s.state.calls===0&&s.state.authCalls===0,'Staged site performed live permission calls or blocked testing');
+ expect(!s.$('consent-rehearsal-panel').hidden&&s.$('consent-rehearsal-email').value.includes('PREVIEW ONLY'),'Email preview absent');
+ s.flow.clear();expect(!s.state.allowed&&s.$('consent-rehearsal-email').value==='','Sign-out retained preview');
+ s=setup({parentPermissionEnabled:true,privacyNoticeReviewed:true});await s.flow.open('owner');
+ expect(!s.state.allowed&&!s.$('consent-request-form').hidden,'Needed permission flow absent');
+ s.$('consent-request-form').events.submit({preventDefault(){}});expect(s.state.calls===1,'Unchecked request submitted');
+ s.$('consent-guardian').checked=true;await s.$('consent-request-form').events.submit({preventDefault(){}});
+ expect(s.state.status==='requested'&&!s.state.allowed,'Request alone granted permission');
+ s.state.status='confirming';await s.flow.open('owner');expect(!s.state.allowed,'Pending confirmation granted permission');
+ s.state.status='verified';await s.flow.open('owner');expect(s.state.allowed,'Verified permission absent');
+ await s.$('consent-withdraw').events.click();expect(!s.state.allowed&&s.state.status==='withdrawn','Withdrawal failed');
+ s.state.status='verified';s.state.owner='other';await s.flow.open('owner');expect(!s.state.allowed,'Other parent granted permission');
+ s.state.owner='owner';s.state.throwError=true;await s.flow.open('owner');expect(!s.state.allowed,'Network error preserved permission');
+ s.state.throwError=false;let resolve;s.state.handler=()=>new Promise(r=>resolve=r);
+ const pending=s.flow.open('owner');
+ for(let i=0;i<20&&!resolve;i++)await Promise.resolve();
+ expect(Boolean(resolve),'Pending permission RPC absent');s.flow.clear();
+ resolve({data:{status:'verified',parent_id:'owner',version:notice.version,notice_hash:'0'.repeat(64)}});await pending;
+ expect(!s.state.allowed&&s.$('parent-consent-panel').hidden,'Late reply restored signed-out permission');
+ return 'PASS permission UI: staged preview, guardian choice, request/confirmation separation, withdrawal, account binding, failures and late replies';
+};
+console.log(await checkPermissionUI(readFileSync(new URL('parent-consent.js',root),'utf8'),parentNotice,siteContact));

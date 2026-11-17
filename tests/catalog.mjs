@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const root = new URL('../', import.meta.url).pathname;
 const db=new PGlite({extensions:{pgcrypto}});
-await db.exec(`create role anon; create role authenticated; create schema auth; create schema private; create schema extensions;
+await db.exec(`create role anon; create role authenticated; create role service_role; create schema auth; create schema private; create schema extensions;
 create extension pgcrypto with schema extensions;
 create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
 create table auth.sessions(id uuid primary key,user_id uuid references auth.users, created_at timestamptz default now());
@@ -75,6 +75,8 @@ await db.exec(readFileSync(root+'/supabase/checks/parent_pin_setup.sql','utf8'))
 console.log('PASS independent first-PIN setup, no explorers, existing PIN protection and session checks');
 await db.exec(readFileSync(root+'/supabase/checks/parent_consent.sql','utf8'));
 console.log('PASS consent readiness, verified-only gates, version/hash checks, withdrawal and isolation');
+await db.exec(readFileSync(root+'/supabase/checks/email_parent_consent.sql','utf8'));
+console.log('PASS email permission state, service-only transitions, confirmation, expiry, withdrawal and deletion');
 // Verify the migration leaves legacy request prices and balances intact.
 await db.exec(`insert into child_profiles(id,family_id,nickname) select '11111111-1111-4111-8111-111111111111',id,'Legacy' from families limit 1;
 insert into fairy_wallets values('11111111-1111-4111-8111-111111111111',42,now());

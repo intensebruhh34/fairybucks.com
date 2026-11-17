@@ -1,0 +1,28 @@
+name: Permission and vault checks
+on:
+  pull_request:
+    paths:
+      - '**.js'
+      - 'auth.html'
+      - 'permission.html'
+      - 'privacy.html'
+      - 'tests/**'
+      - 'supabase/**'
+      - '.github/workflows/permission-checks.yml'
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - run: npm ci
+        working-directory: tests
+      - run: npm test
+        working-directory: tests
