@@ -76,3 +76,23 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 #printable-links li{margin:16px 0;padding-bottom:16px;border-bottom:1px solid #cfb76e}
 .printable-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
 .printable-actions a{display:inline-block;min-height:44px;box-sizing:border-box;text-decoration:none}
+
+/* Keep controls usable on narrow screens and when text is enlarged. */
+.nav-button, .fairy-action, .chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.chip { text-align: center; }
+.fairy-content { overflow-wrap: anywhere; }
+.fairy-content summary {
+  min-height: 44px;
+  padding-block: 10px;
+  cursor: pointer;
+}
+.fairy-dialog { overflow-y: auto; overflow-wrap: anywhere; }
+.fairy-dialog .fairy-action { margin-block: 6px; }

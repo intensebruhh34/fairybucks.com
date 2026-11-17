@@ -40,7 +40,12 @@ body{display:block;padding:0}
 #treasure-requests-list .request-row,#treasure-review-list .request-row{padding:10px 0}
 .request-actions{display:flex;gap:6px;flex-wrap:wrap}
 .danger-action{border:2px solid #9b3b32;background:#fff1ed;color:#8b261d}.danger-action:focus-visible{outline:3px solid #9b3b32}
-#pin-forgot{margin-top:14px}
+#pin-forgot{display:block;width:100%;margin-top:18px}
+#account-deletion-pin-forgot{margin-top:14px}
+.parent-help-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-block:18px}
+.parent-help-actions>button,.parent-help-actions>a{min-height:44px;max-width:100%}
+.parent-help-actions>a{display:inline-flex;align-items:center;padding-block:8px}
+.portal-body button{min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere}
 .profile-edit-button{width:100%;margin-top:10px}
 #edit-profile-fields{border:0;padding:0;margin:0;min-width:0}
 #edit-profile-gender{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}
@@ -107,7 +112,7 @@ body{display:block;padding:0}
 <section id="parent-help" hidden aria-label="Parent guide and help">
 <p><button type="button" id="pin-setup-open" hidden>Create Parent PIN</button></p>
 <details class="fairy-panel"><summary>Account, privacy and support</summary><p data-support-email><a href="mailto:support@fairybucks.com">support@fairybucks.com</a></p><p><a href="/support.html">Parent help</a> · <a href="/privacy.html">Privacy notice</a></p><button type="button" id="account-deletion-open">Delete account and family data</button></details>
-<p><button type="button" id="welcome-open">Welcome guide</button> <button type="button" id="guide-logout">Sign out</button> <a href="#parent-faq">Parent FAQ</a> <a href="#print-fairy-bucks">Print Fairy Bucks</a></p>
+<div class="parent-help-actions"><button type="button" id="welcome-open">Welcome guide</button><button type="button" id="guide-logout">Sign out</button><a href="#parent-faq">Parent FAQ</a><a href="#print-fairy-bucks">Print Fairy Bucks</a></div>
 <section id="welcome-panel" class="fairy-panel" aria-labelledby="welcome-title">
 <h2 id="welcome-title" tabindex="-1">Your family's magical beginning</h2>
 <div id="welcome-copy"></div>
