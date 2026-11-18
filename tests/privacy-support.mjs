@@ -22,4 +22,8 @@ assert.equal(siteContact.mailingAddress,'P.O. Box 240\nWest Warren, MA 01092');
 for(const [key,el] of Object.entries(contacts))assert.equal(el.textContent,siteContact[key]);
 assert.ok(fields.every(el=>el.hidden===false),'Approved business contacts must be visible');
 assert.equal(siteContact.parentPermissionEnabled,false,'Adding contacts must not activate restrictions');
+const support=readFileSync(new URL('support.html',root),'utf8');
+assert.doesNotMatch(support,/print the consent form|readable scan\/photo|reviews your form/i,'Help must not send parents through the retired signature workflow');
+assert.match(support,/separate confirmation email/i);
+assert.match(support,/Opening a link or confirming signup alone does not give permission/);
 console.log('PASS monitored support link, honest draft status, provider/storage disclosures and prominent privacy access');
