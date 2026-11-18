@@ -89,4 +89,6 @@ await db.exec(migration.slice(migration.indexOf('update public.treasures'),migra
 assert.equal((await db.query('select price_at_request from treasure_requests')).rows[0].price_at_request,12);
 assert.equal((await db.query('select balance from fairy_wallets')).rows[0].balance,42);
 console.log('PASS existing request cost and wallet unchanged by catalog update');
+const {checkParentDataRights}=await import('./parent-data-rights.mjs');
+await checkParentDataRights(db,root);
 await db.close();
