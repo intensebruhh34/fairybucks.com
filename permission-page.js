@@ -24,6 +24,13 @@ async function check(action='inspect'){
   if(current!==generation)return;
   if(authError||!auth.user){hide();$('permission-login').hidden=false;$('permission-status').textContent='Sign in to review your permission email.';return;}
   owner=auth.user.id;$('permission-switch').hidden=false;
+  if(!siteContact.parentPermissionEnabled||!siteContact.privacyNoticeReviewed){
+   const {data:scope,error:scopeError}=await client.rpc('fairybucks_permission_rehearsal');
+   if(current!==generation)return;
+   if(scopeError||scope?.parent_id!==owner||scope?.enabled!==true){
+    hide();$('permission-switch').hidden=false;$('permission-status').textContent='Email permission is still being prepared. This account is not enabled for the private rehearsal.';return;
+   }
+  }
   const {data,error}=await client.functions.invoke('parent-permission-email',{
    body:{action,requestId,token,guardian:action==='approve'&&$('permission-guardian').checked}
   });
@@ -71,9 +78,6 @@ $('permission-switch').addEventListener('click',async()=>{
 async function initialize(){
  hide();
  if(!valid){$('permission-status').textContent='Reopen the full permission link from your email, or request a new one in the Parent Portal.';return;}
- if(!siteContact.parentPermissionEnabled||!siteContact.privacyNoticeReviewed){
-  $('permission-status').textContent='Email permission is still being prepared. Current development testing is unchanged.';return;
- }
  const cfg=window.FAIRYBUCKS_AUTH_CONFIG;
  if(!cfg?.url||!/^sb_publishable_/.test(cfg.publishableKey||''))throw Error('Setup pending');
  client=createClient(cfg.url,cfg.publishableKey,{auth:{detectSessionInUrl:false,autoRefreshToken:true,persistSession:true}});

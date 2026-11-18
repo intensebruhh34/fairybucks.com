@@ -23,7 +23,7 @@ export function parentConsent(getClient,onPermission){
  function render(view){
   const d=view.data;
   const match=d.version===parentNotice.version&&d.notice_hash===view.hash;
-  const ready=siteContact.privacyNoticeReviewed&&match;
+  const ready=(siteContact.privacyNoticeReviewed||view.rehearsal)&&match;
   const verified=ready&&d.status==='verified';
   $('consent-status').textContent=!ready?'Email permission is still being prepared. Existing parent records and account deletion remain available.':{
    needed:'Read the notice, then request your permission email.',
@@ -36,6 +36,7 @@ export function parentConsent(getClient,onPermission){
   }[d.status]||'Permission is unavailable. Refresh or contact support.';
   $('consent-request-form').hidden=!ready||!['needed','requested','withdrawn','email_retry','rate_limited'].includes(d.status);
   $('consent-withdraw').hidden=!ready||!['requested','confirming','email_retry','rate_limited','verified'].includes(d.status);
+  if(view.rehearsal)$('consent-status').textContent='Private test-account rehearsal. '+$('consent-status').textContent;
   onPermission(verified);
  }
  async function load(view,action='status'){
@@ -61,9 +62,17 @@ export function parentConsent(getClient,onPermission){
  async function open(ownerId){
   clear();const view=active={ownerId};
   if(siteContact.parentPermissionEnabled===false){
+   try{
+    const {data,error}=await getClient().rpc('fairybucks_permission_rehearsal');
+    if(view!==active)return;
+    view.rehearsal=!error&&data?.parent_id===ownerId&&data?.selected===true;
+   }catch{}
+   if(view!==active)return;
+   if(!view.rehearsal){
    view.staged=true;$('consent-rehearsal-panel').hidden=false;
    $('consent-rehearsal-email').value='PREVIEW ONLY — Email permission is not active.\n\n'+parentNotice.sections.map(([title,copy])=>title+'\n'+copy).join('\n\n');
    onPermission(true);return;
+   }
   }
   $('parent-consent-panel').hidden=false;renderNotice();
   $('consent-request-form').hidden=true;$('consent-withdraw').hidden=true;

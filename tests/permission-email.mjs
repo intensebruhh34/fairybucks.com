@@ -20,6 +20,7 @@ const checkEmailHandler=async function checkEmailHandler(source,notice,contact){
   const fetch=async(url,init={})=>{
    calls.push({url,init});
    if(url.endsWith('/auth/v1/user'))return new ResponseStub(JSON.stringify(user),{status:options.authFail?401:200});
+   if(url.endsWith('/rpc/fairybucks_permission_rehearsal'))return new ResponseStub(JSON.stringify({parent_id:options.scopeWrong?'other':uuid,enabled:options.scope===true}));
    if(url.endsWith('/rpc/fairybucks_email_permission')){
     const p=JSON.parse(init.body);let r;
     if(options.rpc)r=options.rpc(p,result);
@@ -45,6 +46,12 @@ const checkEmailHandler=async function checkEmailHandler(source,notice,contact){
  }
  let s=setup({env:{PARENT_EMAIL_PERMISSION_ENABLED:'false'}}),r=await s.handler(s.request({action:'request'}));
  expect(r.status===503&&s.calls.length===0,'Disabled function performed network work');
+ s=setup({env:{PARENT_EMAIL_PERMISSION_ENABLED:'false',PARENT_PERMISSION_REHEARSAL_ENABLED:'true'}});
+ r=await s.handler(s.request({action:'request',guardian:true}));expect(r.status===503&&s.mails.length===0,'Unselected account entered rehearsal');
+ s=setup({scope:true,scopeWrong:true,env:{PARENT_EMAIL_PERMISSION_ENABLED:'false',PARENT_PERMISSION_REHEARSAL_ENABLED:'true'}});
+ r=await s.handler(s.request({action:'request',guardian:true}));expect(r.status===503&&s.mails.length===0,'Wrong account scope entered rehearsal');
+ s=setup({scope:true,kind:'notice',env:{PARENT_EMAIL_PERMISSION_ENABLED:'false',PARENT_PERMISSION_REHEARSAL_ENABLED:'true'}});
+ r=await s.handler(s.request({action:'request',guardian:true}));expect((await r.json()).status==='requested'&&s.mails.length===1,'Selected rehearsal account could not request notice');
  s=setup();r=await s.handler(s.request({action:'request'},{Origin:'https://attacker.test'}));
  expect(r.status===403&&s.calls.length===0,'Foreign origin accepted');
  r=await s.handler(s.request({action:'request'},{Authorization:''}));
@@ -88,12 +95,12 @@ const checkApprovalPage=async function checkApprovalPage(source,notice,contact){
  const expect=(v,m)=>{if(!v)throw Error(m);};
  const rid='33333333-3333-4333-8333-333333333333';
  const flush=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
- function setup(){
+ function setup(config={}){
   const nodes=new Map(),make=()=>({hidden:true,disabled:false,checked:false,value:'',textContent:'',children:[],events:{},
    append(...x){this.children.push(...x);},replaceChildren(...x){this.children=x;},addEventListener(n,f){this.events[n]=f;},querySelector(){return {disabled:false};}});
   const $=id=>{if(!nodes.has(id))nodes.set(id,make());return nodes.get(id);};
   const state={calls:[],owner:'owner',status:'requested',fail:false,history:[],authHandler:null};
-  const client={auth:{
+  const client={rpc:async()=>({data:{parent_id:state.owner,enabled:config.selected===true}}),auth:{
    async getUser(){return state.authHandler?state.authHandler():{data:{user:state.owner?{id:state.owner,email:'parent@example.test'}:null}};},
    onAuthStateChange(f){state.authChanged=f;},async signInWithPassword(){state.owner='owner';return {};},
    async signOut(){state.owner=null;state.authChanged('SIGNED_OUT',null);return {};}
@@ -104,14 +111,18 @@ const checkApprovalPage=async function checkApprovalPage(source,notice,contact){
   const params=class{constructor(v){this.p=Object.fromEntries(v.split('&').map(p=>p.split('=')));}get(k){return this.p[k]||null;}};
   const api=new Function('createClient','parentNotice','siteContact','renderContact','parentNoticeHash','document','location','history','window','URLSearchParams',
     source.replace(/^import .+;$/gm,'')+'\nreturn {check};')(
-   ()=>client,notice,{...contact,parentPermissionEnabled:true,privacyNoticeReviewed:true},()=>{},async()=>'hash',
+   ()=>client,notice,{...contact,parentPermissionEnabled:!config.staged,privacyNoticeReviewed:!config.staged},()=>{},async()=>'hash',
    {getElementById:$,createElement:make},
    {hash:'#request='+rid+'&token='+'0'.repeat(64),pathname:'/permission.html'},
    {replaceState(...x){state.history.push(x);}},
    {FAIRYBUCKS_AUTH_CONFIG:{url:'https://example.test',publishableKey:'sb_publishable_fixture'}},params);
   return {api,$,state,client};
  }
- let s=setup();await flush();
+ let s=setup({staged:true});await flush();
+ expect(s.state.calls.length===0&&s.$('permission-approve').hidden,'Nonselected account accessed staged approval');
+ s=setup({staged:true,selected:true});await flush();
+ expect(s.state.calls.length===1&&!s.$('permission-approve').hidden,'Selected account could not inspect rehearsal notice');
+ s=setup();await flush();
  expect(s.state.history.length===1&&s.state.history[0][2]==='/permission.html','Token fragment was retained');
  expect(s.state.calls.length===1&&s.state.calls[0].action==='inspect','Opening link approved permission');
  expect(!s.$('permission-approve').hidden,'Valid notice did not expose explicit approval');
