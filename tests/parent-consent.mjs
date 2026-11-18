@@ -21,7 +21,7 @@ const checkPermissionUI=async function checkPermissionUI(source,notice,contact){
    source.replace(/^import .+;$/gm,'').replaceAll('export ','')+'\nreturn {parentConsent};')(
    {getElementById:$,createElement:make},{confirm:()=>true},{...contact,...settings},notice,
    {subtle:{digest:async()=>new ArrayBuffer(32)}},class{encode(){return new Uint8Array();}});
-  const client={auth:{getUser:async()=>{state.authCalls++;return {data:{user:{id:'owner'}}};}},
+  const client={rpc:async()=>({data:{parent_id:state.owner,selected:settings.rehearsal===true,enabled:settings.rehearsal===true}}),auth:{getUser:async()=>{state.authCalls++;return {data:{user:{id:'owner'}}};}},
    functions:{invoke:async(name,args)=>{
     state.calls++;if(state.throwError)throw Error('network');
     if(state.handler)return state.handler(name,args);
@@ -36,6 +36,10 @@ const checkPermissionUI=async function checkPermissionUI(source,notice,contact){
  expect(s.state.allowed&&s.state.calls===0&&s.state.authCalls===0,'Staged site performed live permission calls or blocked testing');
  expect(!s.$('consent-rehearsal-panel').hidden&&s.$('consent-rehearsal-email').value.includes('PREVIEW ONLY'),'Email preview absent');
  s.flow.clear();expect(!s.state.allowed&&s.$('consent-rehearsal-email').value==='','Sign-out retained preview');
+ s=setup({rehearsal:true});await s.flow.open('owner');
+ expect(!s.state.allowed&&!s.$('parent-consent-panel').hidden&&!s.$('consent-request-form').hidden,'Selected account did not enter gated rehearsal');
+ s.state.status='verified';await s.flow.open('owner');expect(s.state.allowed,'Selected verified tester stayed blocked');
+ s.state.throwError=true;await s.flow.open('owner');expect(!s.state.allowed,'Rehearsal network failure kept child access enabled');
  s=setup({parentPermissionEnabled:true,privacyNoticeReviewed:true});await s.flow.open('owner');
  expect(!s.state.allowed&&!s.$('consent-request-form').hidden,'Needed permission flow absent');
  s.$('consent-request-form').events.submit({preventDefault(){}});expect(s.state.calls===1,'Unchecked request submitted');

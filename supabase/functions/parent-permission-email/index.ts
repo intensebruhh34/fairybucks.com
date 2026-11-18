@@ -71,7 +71,8 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
   if(request.method!=='POST')return reply({status:'method_not_allowed'},405);
   // Must be explicitly enabled AFTER provider/method review and an end-to-end test.
-  if(env('PARENT_EMAIL_PERMISSION_ENABLED')!=='true')return reply({status:'staged'},503);
+  const publicEnabled=env('PARENT_EMAIL_PERMISSION_ENABLED')==='true';
+  if(!publicEnabled&&env('PARENT_PERMISSION_REHEARSAL_ENABLED')!=='true')return reply({status:'staged'},503);
   const url=env('SUPABASE_URL'),anon=env('SUPABASE_ANON_KEY'),service=env('SUPABASE_SERVICE_ROLE_KEY');
   if(!url||!anon||!service||!env('RESEND_API_KEY')||(env('PERMISSION_LINK_SECRET')||'').length<32)
    return reply({status:'setup_pending'},503);
@@ -95,6 +96,14 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
    }catch{return reply({status:'sign_in_required'},401);}
    const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
    if(!uuid.test(session||''))return reply({status:'sign_in_required'},401);
+   if(!publicEnabled){
+    const scopeReply=await send(url+'/rest/v1/rpc/fairybucks_permission_rehearsal',{
+     method:'POST',headers:{apikey:anon,Authorization:auth,'Content-Type':'application/json'},body:'{}'
+    });
+    if(!scopeReply.ok)return reply({status:'staged'},503);
+    const scope=await scopeReply.json();
+    if(scope?.parent_id!==user.id||scope?.enabled!==true)return reply({status:'staged'},503);
+   }
    const version=permissionSnapshot.notice.version,noticeHash=await fingerprint();
    const rpc=async(action,extra={})=>{
     const response=await send(url+'/rest/v1/rpc/fairybucks_email_permission',{
