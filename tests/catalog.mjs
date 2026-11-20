@@ -25,7 +25,7 @@ insert into auth.sessions values(gen_random_uuid(),'44a684ee-6e65-4098-80d7-3a21
 insert into families(owner_id) select id from auth.users;
 update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`);
 const legacyExplorerCheck=process.argv.includes('--explorer-without-consent');
-const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')));
+const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')));
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
 if(legacyExplorerCheck){
  await db.exec(readFileSync(root+'/supabase/checks/child_mode_readiness.sql','utf8'));
@@ -91,4 +91,6 @@ assert.equal((await db.query('select balance from fairy_wallets')).rows[0].balan
 console.log('PASS existing request cost and wallet unchanged by catalog update');
 const {checkParentDataRights}=await import('./parent-data-rights.mjs');
 await checkParentDataRights(db,root);
+await db.exec(readFileSync(root+'/supabase/checks/retention_cleanup.sql','utf8'));
+console.log('PASS retention cleanup and permission preservation');
 await db.close();
