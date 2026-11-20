@@ -53,7 +53,7 @@ step 10 complete merely because this PR or the rollback tests pass.
 ## Deployment and provider update — November 20, 2026
 
 - PR #49 merged. Owner reports install, rollback verification and scheduler scripts all passed.
-- Database inspection confirms active `fairybucks-retention-cleanup` schedule (`17 3 * * *`). At the latest inspection there were no runs and no last-success row. First scheduled success is still pending; do not rerun installation.
+- Database inspection confirms active `fairybucks-retention-cleanup` schedule (`17 3 * * *`). A manual run succeeded at 2026-11-20 18:22:49 UTC and removed one expired child session. No automatic runs were recorded at the subsequent inspection. First scheduled success is still pending; do not rerun installation.
 - Supabase organization API confirms Free; owner confirms Resend Free.
 - Owner confirms Squarespace configured support@fairybucks.com forwarding to Gmail. This identifies the route, not an independently verified retention guarantee for every forwarding subprocessor.
 - No family export was requested or delivered during the parked step 9 rehearsal. Owner's statement about local downloads was interpreted as no known exports, not a device audit; confirm if any copies are discovered.
@@ -93,3 +93,75 @@ observed routine or automation. No mailbox messages were deleted in this review.
    policies. No family deletion is authorized just by adopting a schedule.
 
 Step 10 remains open. Step 9 remains parked and step 8 stays unchanged.
+
+## Purpose-end decisions and closure checklist
+
+Reviewable policy for owner adoption through this PR; a document merge is not
+proof of execution. The owner must establish the restricted operational log and
+case due dates before inviting families. Store populated logs outside this public
+repository. Never commit parent emails, UUIDs or support messages here.
+
+| Record | Purpose end / action | Execution evidence |
+| --- | --- | --- |
+| Family vault | Keep for the parent’s continuing service. On pilot closure, contact each pilot parent and resolve continuation/deletion by pilot-end + 90 days. Parent account deletion is already implemented; unresolved cases require a separately reviewed, scoped operator deletion, not guessed credentials. | Private pilot roster: end date, continuation choice, due date, deletion result. |
+| Unused account | Monthly review identifies accounts no longer needed; request a continuation decision and set a deletion due date. No silent automatic family deletion is installed. Final inactivity threshold and operator execution remain launch blockers. | Owner-approved inactivity rule and reviewed deletion execution. |
+| Permission decisions and history | Keep while the account exists for permission enforcement, explaining approval/withdrawal, and parent access. Whole-account deletion removes them. After withdrawal keep the blocking decision; do not delete it just to shorten history. No post-deletion audit archive is created by this system. | Existing account-deletion verification; account-purpose review with the vault. |
+| Closed support case | Deadline is closure + 90 days. Record the due date at closure, review monthly and delete the thread/attachments plus related sent/forwarded operator copies by the deadline. | Private case reference, closure/due dates, completion and exceptions. |
+| Specific security/legal exception | Keep only records needed for the documented issue; record reason, responsible owner and review date. Delete once the need ends. | Restricted exception review; do not claim such holds exist for the automated temporary-record cleanup. |
+| Operator export / backup | No routine family exports were created by this review. If copies are introduced, record purpose, location, authorized access and deletion date before creating them. | Restricted inventory; provider backups remain separate. |
+
+A privacy-safe operational log needs only a case reference, record category,
+restricted target reference, purpose, closure/event date, delete-by date,
+responsible owner, completion date and exception review date if applicable.
+This PR supplies the procedure; it does not silently create an operating service.
+
+### Two provider questions prepared for the owner
+
+Do not include family messages, passwords, PINs, secret API keys or permission
+links. These are drafts only; no message was sent on the owner's behalf.
+
+**Resend support — domain tracking confirmation**
+
+> For our Free-plan sending domain fairybucks.com, please confirm the currently
+> effective open_tracking and click_tracking settings. Configuration shows
+> “Enable tracking metrics / Configure,” which opens a “New tracking subdomain”
+> form. We did not submit that form. Does the current unsaved setup screen mean
+> tracking is disabled for outgoing account and permission emails? If not, how
+> can we disable both without creating a tracking subdomain? Please also confirm
+> whether the standard 30-day email/log and seven-day backup retention applies
+> to this account.
+
+**Squarespace support — domain email forwarding retention**
+
+> We use Squarespace domain email forwarding for support@fairybucks.com to a
+> Gmail inbox. What message content, headers, delivery/security logs and backups
+> are retained by Squarespace and its forwarding subprocessors, and for how
+> long? Which provider processes the forwarded mail? How can we request deletion
+> of any retained support-message copies? We need the policy for this forwarding
+> service, not Squarespace Email Campaigns or a Google Workspace mailbox.
+
+Public sources checked do not establish the account-specific answers above.
+The screenshots show an unsaved tracking setup, not the effective domain flags.
+Do not change DNS, create a tracking domain, claim tracking is off or mark the
+forwarding-retention question resolved until a reliable answer is recorded.
+
+### Remaining owner configuration checks (no secrets needed)
+
+- Confirm Gmail has no extra forwarding destinations or downloaded support
+  attachments/mailbox exports. Adopt the closure/deletion procedure.
+- Confirm no extra Supabase log drains or operator-created database backups.
+- Confirm the interpretation of “no family exports downloaded”; correct the
+  copy inventory if any were saved earlier.
+- Choose the inactivity threshold, operational owner and pilot-end date/roster
+  before the pilot starts. Do not invent a pilot end date or delete a family now.
+
+### Automatic-run acceptance
+
+The deployed job is daily 03:17 UTC. In November this is 10:17 p.m. Eastern on
+the previous calendar date; it changes to 11:17 p.m. during daylight saving time.
+Read `cron.job_run_details` and the latest-success row after the scheduled time.
+A successful manual run is not scheduler evidence. The future check is not an
+assistant automation or reminder unless separately created.
+
+Step 10 is not closed by this PR alone. Pending provider answers, owner settings,
+policy execution and the automatic-run check remain explicitly listed here.
