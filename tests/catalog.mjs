@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url).pathname;
 const db=new PGlite({extensions:{pgcrypto}});
 await db.exec(`create role anon; create role authenticated; create role service_role; create schema auth; create schema private; create schema extensions;
 create extension pgcrypto with schema extensions;
-create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
+create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,created_at timestamptz default now(),last_sign_in_at timestamptz);
 create table auth.sessions(id uuid primary key,user_id uuid references auth.users, created_at timestamptz default now());
 create function auth.jwt() returns jsonb language sql as $$select current_setting('request.jwt.claims',true)::jsonb$$;
 create function auth.uid() returns uuid language sql as $$select (auth.jwt()->>'sub')::uuid$$;
@@ -25,7 +25,7 @@ insert into auth.sessions values(gen_random_uuid(),'44a684ee-6e65-4098-80d7-3a21
 insert into families(owner_id) select id from auth.users;
 update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`);
 const legacyExplorerCheck=process.argv.includes('--explorer-without-consent');
-const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')));
+const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')&&!f.includes('retention_periods')));
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
 if(legacyExplorerCheck){
  await db.exec(readFileSync(root+'/supabase/checks/child_mode_readiness.sql','utf8'));
@@ -93,4 +93,6 @@ const {checkParentDataRights}=await import('./parent-data-rights.mjs');
 await checkParentDataRights(db,root);
 await db.exec(readFileSync(root+'/supabase/checks/retention_cleanup.sql','utf8'));
 console.log('PASS retention cleanup and permission preservation');
+await db.exec(readFileSync(root+'/supabase/checks/retention_periods.sql','utf8'));
+console.log('PASS inactivity warning, activity cancellation and scoped deletion');
 await db.close();
