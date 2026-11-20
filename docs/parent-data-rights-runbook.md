@@ -1,106 +1,89 @@
-# Parent data requests — operator procedure
+# Parent review, correction and deletion
 
-Scope: existing profile editing, whole-account deletion, support-assisted family
-data copies and deletion of one explorer. Only authorized operators use the SQL
-templates. They are not public APIs and do not themselves verify the requester.
+## Current approach — November 20, 2026
 
-## Self-service explorer deletion
+The owner chose the existing Parent Portal as the main review route and dismissed
+the dedicated family-data download/export workflow. No download button or
+mandatory export-delivery/email-challenge rehearsal is part of the product plan.
+The public help page directs parents to their records and general support,
+rather than advertising an export service.
 
-Parents can use Delete explorer on the selected explorer's card after the
-`delete_explorer` migration is installed. The review explains permanent removal,
-requires a fresh six-digit Parent PIN and typed DELETE, and binds the request to
-the signed-in parent, explorer ID and reviewed nickname. The server checks the
-live Auth session and rate-limits the PIN inside the same deletion transaction.
-A missing PIN must be created first. Support must not ask parents to email PINs.
+This changes the interface and procedure, not parents' ability to ask to review
+information. Do not assume everything collected is visible merely because the
+main vault records are displayed. A parent who cannot find information or access
+their account can contact support. Arrange appropriate verified access for the
+actual request without imposing the retired standard email-code exchange.
 
-The action removes the selected explorer's active records and sessions, clears
-parent unlocks and preserves the parent account and siblings. A changed nickname
-requires another review. Lost responses require reloading the list, not assuming
-success or deleting a different profile. No family-data download button is added.
-Data-copy requests remain support-assisted; their operational rehearsal is still
-pending and is not closed by the explorer-deletion feature.
+The FTC's parental-access guidance calls for a means of review. It does not
+specify a download button. This document does not certify that the present portal
+covers every record/provider or independently establishes legal compliance.
 
-## Verify a support request before releasing or deleting data
+## Portal actions
 
-1. Receive the request at support@fairybucks.com. Do not act on a screenshot,
-   nickname, claimed email address or incoming From header alone.
-2. Find the existing registered, confirmed parent email and account UUID in the
-   protected operator dashboard. Send a fresh, unpredictable one-time challenge
-   and case ID **to that registered address**, not a replacement address supplied
-   in the request. Generate the challenge with a password manager; never reuse it.
-3. Require a reply with that challenge from the registered mailbox. Expire the
-   challenge after 24 hours and after use. If the mailbox is inaccessible, use
-   account recovery first; do not change ownership or accept a password/PIN as proof.
-4. Record the case ID, verification time, registered account UUID, request type
-   and minimum required scope in the restricted support case. Keep the challenge
-   out of exported data and SQL comments. Do not include family details in GitHub.
-5. For deletion, separately obtain an explicit confirmation naming the exact
-   explorer. If nicknames are duplicated, resolve which profile the parent means
-   before using its UUID. Explain permanence, affected records and purchase limits.
+- Review explorer details, balances, tooth history, transactions and treasure
+  requests in the family's own authenticated portal.
+- Correct nickname and optional details with Edit explorer; undo mistaken tooth
+  entries in Parent controls.
+- Choose Delete explorer on the exact card. The warning names the target and
+  explains permanent removal. A fresh six-digit Parent PIN and typed DELETE are
+  required. Missing PIN setup must be completed first.
+- Explorer deletion removes that explorer's active profile, wallet, teeth,
+  transactions, wishlist, requests/delivery history and child sessions. Parent
+  unlocks are cleared. The parent login, sibling explorers and account-level
+  settings/permission history remain.
+- Whole-account deletion uses Delete account and family data, recent sign-in,
+  Parent PIN if configured and typed confirmation.
+- Permission withdrawal ends child access when enforcement applies; it does not
+  erase the parent's existing records.
 
-## Provide a copy
+PR #57 was merged, the deletion migration was installed, and the hosted rollback
+check passed. The owner reported successful deletion of one explorer and
+cancellation of a second deletion. Do not claim a wrong-PIN manual test from
+that report; wrong PIN and lockout are covered by automated/hosted checks.
 
-Use `supabase/operators/export_family_data.sql`. Fill the verified email,
-expected parent UUID and case reference. The default template returns no data.
-Run it as a read-only query and confirm exactly one result for the intended parent.
+## Help when portal review is insufficient
 
-Review the JSON before delivery: parent email, own families/explorers, wallets,
-transactions, tooth records, treasure requests/delivery status, reward settings,
-guide progress and permission history. Authentication/PIN secrets, session tokens,
-mail leases and other families are excluded. Provider logs/backups and support
-correspondence are not in this application snapshot; review those separately if
-the request covers them. Do not claim the snapshot includes every provider copy.
+Answer ordinary navigation questions by directing the parent to the relevant
+portal screen. If they are locked out, use the existing password/PIN recovery
+flows. Never request passwords, PINs or sign-in links by email.
 
-Confirm the delivery method with the verified parent. Deliver only to the
-verified destination using a private method; do not upload it to GitHub, a public
-file link, or an unverified replacement inbox. Avoid retaining a second downloaded
-copy after successful delivery. Record delivery time and scope in the case.
+For a request involving information unavailable in the portal, establish the
+actual scope and arrange review only after reasonable account-ownership
+verification. An incoming From address, nickname or screenshot alone is not
+proof. Successful portal sign-in proves access within that session; it does not
+automatically authenticate a separate unsolicited support email. If ownership
+cannot be verified, pause disclosure and help with account recovery.
 
-## Delete one explorer
+Record only a minimal private case reference, scope and outcome. Do not put
+parent identifiers, support messages or exported records in public GitHub.
+Existing operator SQL tools remain restricted implementation tools, not a
+promised download feature or an automatic response to every support message.
+Do not create or email an export unless an actual verified request requires
+that delivery method and the parent agrees to it.
 
-Use `supabase/operators/delete_explorer_data.sql` only after verification and
-explicit confirmation. Fill the verified parent email, parent UUID, explorer UUID,
-case reference, and `DELETE EXPLORER <exact UUID>` confirmation.
+## Exceptional operator deletion
 
-The transaction locks the parent/family/selected explorer; checks ownership;
-removes that explorer's child sessions, requests, transactions, teeth, wallet and
-profile; and ends existing parent unlocks. It keeps the parent login, siblings,
-other families and account-level settings/permission history.
+Prefer the parent's PIN-confirmed portal action. If verified support assistance
+requires operator deletion, obtain explicit confirmation of the exact explorer,
+resolve duplicate nicknames using the account/profile IDs and use the scoped
+operator template. Never widen ownership filters or add CASCADE to force a
+failed deletion. An unknown restrictive dependency must roll back.
 
-An unknown dependency fails the whole transaction. Never add CASCADE or remove
-ownership filters to force it through. Roll back after an error and investigate.
-If a response is lost, inspect the intended explorer before retrying. Do not
-substitute another profile or widen the request.
+Verify selected records/sessions are gone and parent/sibling records remain.
+A lost response requires inspection before retrying. Explain that deletion of
+active records does not cancel retailer purchases or instantly erase provider
+logs/backups, previous support messages or copies on the parent's device.
 
-Verify afterward: selected profile and active dependent records absent, selected
-child sessions absent, parent/siblings retained. Tell the parent deletion affects
-active application records; it does not cancel retailer purchases or instantly
-erase provider backups/logs, their own downloads or prior support correspondence.
+## Validation and limits
 
-## Existing portal actions
+Existing SQL tests cover scoped operator access, secret exclusion, exact deletion
+confirmation and family isolation. The new RPC/UI tests also cover fresh PIN,
+throttling, changed names, stale sessions, uncertain responses and sibling
+preservation. The old challenge/export-delivery rehearsal is retired; no claim
+is made that a real export was delivered.
 
-- Review records in the Family Vault and explorer histories.
-- Correct nickname/optional age and gender using Edit explorer.
-- Undo a mistaken tooth entry in Parent controls.
-- Use Delete account and family data for whole-account removal. This requires
-  recent sign-in, Parent PIN if configured and typed confirmation. Never test it
-  on a real family without their explicit request.
-- Withdrawal refuses further child-mode collection when permission enforcement
-  is active. During development the public release remains staged; the completed
-  account-scoped permission rehearsal tested that boundary separately.
+Keep support available for exceptional access requests. Step 9 does not require
+building a download feature, and removing that feature does not remove the need
+to respond appropriately to an actual parental-access request.
 
-## Step 9 validation and remaining operator rehearsal
-
-Automated tests use synthetic parents and children in a disposable local database.
-They check scoped copy/secret exclusion, mismatched identities, exact deletion
-confirmation, cross-family denial, atomic rollback on an unknown dependency,
-target-session removal and preservation of siblings/other families. Existing
-profile-editing and whole-account deletion regression tests remain in the suite.
-
-Before closing the operational portion of step 9, rehearse a support request with
-the owner using **dummy explorer records only**: request, mailbox challenge,
-verified copy delivery, explicit single-explorer deletion confirmation and parent
-receipt of the result. Do not mark that human workflow passed from the SQL tests.
-
-Keep public permission disabled. Step 10 still owns approved retention schedules,
-provider-copy handling and automated cleanup; step 12 owns routine support operations.
+Reference: https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions
