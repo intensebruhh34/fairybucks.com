@@ -49,3 +49,47 @@ must be verified separately. Nothing in this PR applies itself to production.
 
 Public permission flags remain false. Privacy notice stays a draft. Do not mark
 step 10 complete merely because this PR or the rollback tests pass.
+
+## Deployment and provider update — November 20, 2026
+
+- PR #49 merged. Owner reports install, rollback verification and scheduler scripts all passed.
+- Database inspection confirms active `fairybucks-retention-cleanup` schedule (`17 3 * * *`). At the latest inspection there were no runs and no last-success row. First scheduled success is still pending; do not rerun installation.
+- Supabase organization API confirms Free; owner confirms Resend Free.
+- Owner confirms Squarespace configured support@fairybucks.com forwarding to Gmail. This identifies the route, not an independently verified retention guarantee for every forwarding subprocessor.
+- No family export was requested or delivered during the parked step 9 rehearsal. Owner's statement about local downloads was interpreted as no known exports, not a device audit; confirm if any copies are discovered.
+
+### Support mailbox procedure to adopt before invitations
+
+Use the dedicated support inbox for family support. Avoid unnecessary attachments,
+full child names and copies in personal inboxes, downloads or public issues.
+Record the case closure date in a restricted support log (case reference and dates,
+not message contents). Review open and closed cases at least monthly. Flag cases
+approaching 90 days after closure and permanently delete the support thread and
+related sent/forwarded copies by that deadline. The monthly review alone is not a
+90-day guarantee: set a due date when closing each case and act before it expires.
+Review only relevant messages in Trash; never indiscriminately empty an unrelated
+mailbox. Gmail archiving is not deletion; Trash has its own up-to-30-day period.
+For a documented security/legal exception, record the specific reason, minimal
+records required, responsible owner and next review date. End the exception and
+delete the copies when the need ends. This procedure is prepared, not yet an
+observed routine or automation. No mailbox messages were deleted in this review.
+
+### Outstanding configuration evidence
+
+1. Resend domain Configuration: confirm both open and click tracking are off for
+   account/permission mail. Do not infer this from plain-text source or a missing
+   custom tracking domain. [Resend's guidance](https://github.com/resend/resend-skills/blob/main/skills/resend/references/sending/overview.md)
+   places the settings at domain level.
+2. Squarespace forwarding: determine its forwarding processing/retention terms
+   (including any delivery subcontractor), rather than claiming zero storage.
+   [Squarespace forwarding documentation](https://support.squarespace.com/hc/en-us/articles/19000909092237-Email-forwarding-with-a-Squarespace-domain).
+3. Gmail: confirm no additional forwarding, mailbox export or support attachment
+   copies; adopt the closure/deletion procedure above.
+   [Google's deletion instructions](https://support.google.com/mail/answer/7401)
+   explain Trash and permanent deletion, not universal infrastructure-copy erasure.
+4. Supabase: confirm extra log drains/operator backups separately from Free-plan
+   availability. Do not collect secrets to check these settings.
+5. Finalize and execute pilot-end/inactive-account and permission-purpose-end
+   policies. No family deletion is authorized just by adopting a schedule.
+
+Step 10 remains open. Step 9 remains parked and step 8 stays unchanged.
