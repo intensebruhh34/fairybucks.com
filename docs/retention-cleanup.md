@@ -1,6 +1,15 @@
 # Step 10 — retention and cleanup (prepared November 20, 2026)
 
 Step 9's manual email rehearsal is parked at the owner's request. Step 8 stays.
+
+**Latest decisions:** the owner approved 90-day support retention and a 12-month
+inactivity review followed by a 30-day warning. See [retention operations](retention-operations.md)
+for implementation, installation, safety checks and remaining operational work.
+Owner confirmed no extra Gmail destinations and no known exported family data or
+backups. Forwarding retention is disclosed without an unverified numeric deadline;
+no further provider investigation is requested from the owner for that item.
+Resend tracking is recorded off based on the setup history/defaults, not an API
+audit. Earlier unresolved questions below are historical where superseded here.
 This change is operational cleanup, not a launch approval or legal sign-off.
 
 ## Retention implemented by this change
