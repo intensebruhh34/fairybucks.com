@@ -17,6 +17,7 @@ create table public.fairy_transactions(id uuid primary key default gen_random_uu
 create table public.lost_teeth(id uuid primary key default gen_random_uuid(),child_id uuid references child_profiles,lost_on date,created_at timestamptz default now());
 create table private.parent_pin_security(parent_id uuid primary key references auth.users,pin_hash text,failed_attempts int default 0,locked_until timestamptz,updated_at timestamptz default now());
 create table public.treasures(id uuid primary key default gen_random_uuid(),name text,category text check(category in ('Learning','Creativity','Treasure')),description text,fairy_price int,is_active bool);
+create table public.wishlists(id uuid primary key default gen_random_uuid(),child_id uuid not null references child_profiles on delete cascade,treasure_id uuid not null references treasures,created_at timestamptz default now());
 create table public.treasure_requests(id uuid primary key,child_id uuid references child_profiles,treasure_id uuid references treasures,status text,price_at_request int,created_at timestamptz default now());
 grant usage on schema public,auth to authenticated,anon;
 grant execute on function auth.uid(),auth.jwt() to authenticated,anon;
@@ -89,6 +90,8 @@ await db.exec(migration.slice(migration.indexOf('update public.treasures'),migra
 assert.equal((await db.query('select price_at_request from treasure_requests')).rows[0].price_at_request,12);
 assert.equal((await db.query('select balance from fairy_wallets')).rows[0].balance,42);
 console.log('PASS existing request cost and wallet unchanged by catalog update');
+await db.exec(readFileSync(root+'/supabase/checks/delete_explorer.sql','utf8'));
+console.log('PASS self-service explorer deletion: fresh PIN, throttling, atomic rollback and isolation');
 const {checkParentDataRights}=await import('./parent-data-rights.mjs');
 await checkParentDataRights(db,root);
 await db.exec(readFileSync(root+'/supabase/checks/retention_cleanup.sql','utf8'));
