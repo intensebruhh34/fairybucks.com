@@ -4,7 +4,23 @@ Scope: existing profile editing, whole-account deletion, support-assisted family
 data copies and deletion of one explorer. Only authorized operators use the SQL
 templates. They are not public APIs and do not themselves verify the requester.
 
-## Verify the request before releasing or deleting data
+## Self-service explorer deletion
+
+Parents can use Delete explorer on the selected explorer's card after the
+`delete_explorer` migration is installed. The review explains permanent removal,
+requires a fresh six-digit Parent PIN and typed DELETE, and binds the request to
+the signed-in parent, explorer ID and reviewed nickname. The server checks the
+live Auth session and rate-limits the PIN inside the same deletion transaction.
+A missing PIN must be created first. Support must not ask parents to email PINs.
+
+The action removes the selected explorer's active records and sessions, clears
+parent unlocks and preserves the parent account and siblings. A changed nickname
+requires another review. Lost responses require reloading the list, not assuming
+success or deleting a different profile. No family-data download button is added.
+Data-copy requests remain support-assisted; their operational rehearsal is still
+pending and is not closed by the explorer-deletion feature.
+
+## Verify a support request before releasing or deleting data
 
 1. Receive the request at support@fairybucks.com. Do not act on a screenshot,
    nickname, claimed email address or incoming From header alone.

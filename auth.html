@@ -46,7 +46,10 @@ body{display:block;padding:0}
 .parent-help-actions>button,.parent-help-actions>a{min-height:44px;max-width:100%}
 .parent-help-actions>a{display:inline-flex;align-items:center;padding-block:8px}
 .portal-body button{min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere}
-.profile-edit-button{width:100%;margin-top:10px}
+.profile-edit-button,.profile-delete-button{width:100%;margin-top:12px}
+#delete-explorer-fields{border:0;padding:0;margin:0;min-width:0}
+#delete-explorer-cancel{width:100%;margin-top:16px}
+#delete-explorer-panel{border:2px solid #9b3b32}
 #edit-profile-fields{border:0;padding:0;margin:0;min-width:0}
 #edit-profile-gender{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}
 #edit-profile-cancel{margin-top:12px}
@@ -159,7 +162,7 @@ body{display:block;padding:0}
 <p><button type="button" id="family-create" class="primary" hidden>Set up my Family Vault</button>
 <button type="button" id="family-retry" hidden>Check again</button></p>
 <section id="vault-profiles" aria-labelledby="profile-heading" hidden>
-<h3 id="profile-heading">Your Explorers</h3>
+<h3 id="profile-heading" tabindex="-1">Your Explorers</h3>
 <p class="muted">Add a profile for each child in your family.</p>
 <p id="profile-status" role="status" aria-live="polite"></p>
 <button type="button" id="profile-retry" hidden>Reload explorers</button>
@@ -174,6 +177,24 @@ body{display:block;padding:0}
 <button type="submit" class="primary">Save explorer changes</button></fieldset>
 <p id="edit-profile-status" role="status" aria-live="polite"></p></form>
 <button type="button" id="edit-profile-cancel">Cancel editing</button>
+</section>
+<section id="delete-explorer-panel" class="fairy-panel" hidden aria-labelledby="delete-explorer-title">
+<h3 id="delete-explorer-title" tabindex="-1">Permanently delete explorer?</h3>
+<p><strong>You are about to delete <span id="delete-explorer-name"></span>.</strong> This cannot be undone.</p>
+<p>This permanently removes this explorer’s profile, Fairy Bucks balance, tooth records, transaction history, wishlist, treasure requests and delivery history from the active database. Their child vault sessions will end.</p>
+<p>Your parent account and other explorers stay. This does not cancel purchases you arranged separately or immediately erase provider logs, backups, support emails or copies you saved yourself. <a href="/privacy.html">Privacy and deletion details</a>.</p>
+<p id="delete-explorer-status" role="status" aria-live="polite"></p>
+<button type="button" id="delete-explorer-retry" hidden>Reload deletion review</button>
+<button type="button" id="delete-explorer-setup" hidden>Create Parent PIN</button>
+<form id="delete-explorer-form" hidden><fieldset id="delete-explorer-fields">
+<label for="delete-explorer-pin">Enter your six-digit Parent PIN to confirm</label>
+<input id="delete-explorer-pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required>
+<button type="button" id="delete-explorer-reset">Reset Parent PIN</button>
+<label for="delete-explorer-confirm">Type DELETE to confirm permanent deletion</label>
+<input id="delete-explorer-confirm" autocomplete="off" spellcheck="false" required>
+<button type="submit" class="danger-action">Permanently delete explorer</button>
+</fieldset></form>
+<button type="button" id="delete-explorer-cancel">Cancel — keep explorer</button>
 </section>
 <details id="profile-form" hidden>
 <summary>Add an explorer</summary>
@@ -278,6 +299,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { explorerProfileEditor } from "/explorer-profile-editor.js";
 import { parentConsent } from "/parent-consent.js";
 import { accountDeletion } from "/account-deletion.js";
+import { explorerDeletion } from "/explorer-deletion.js";
 import { renderContact } from "/site-contact.js";
 import { parentPinRecovery } from "/parent-pin-recovery.js";
 import { parentGuide } from "/parent-guide.js";
@@ -298,6 +320,15 @@ const profileEditor=explorerProfileEditor(()=>client,async(profile,ownerId)=>{
  const loaded=await loadProfiles(view);
  if(loaded && view===familyView)$("profile-status").textContent="Explorer details saved.";
 });
+const explorerDeleter=explorerDeletion(()=>client,async(profile,ownerId)=>{
+ const view=familyView;if(view?.ownerId!==ownerId)return;
+ wallet.open();requests.open();
+ const loaded=await loadProfiles(view);
+ if(view===familyView){
+  $("profile-status").textContent=loaded?"Explorer permanently deleted. Your account and other explorers are unchanged.":"Explorer permanently deleted. Reload the list to see your remaining explorers.";
+  $("profile-heading").focus();
+ }
+},()=>pinRecovery.open({setup:true}),()=>pinRecovery.open());
 const guide=parentGuide(()=>client,ownerId=>{
  if(familyView?.ownerId!==ownerId)return;
  familyView.guideReady=true;
@@ -351,7 +382,7 @@ function showExplorer(view){
  $("explorer-shop").href=profile?"/#shop&explorer="+profile.id:"/#shop";
  wallet.open(profile?.id);
  requests.open(profile?.id,Number(route.get("treasure")));
- if(profile)profileEditor.clear();
+ if(profile){profileEditor.clear();explorerDeleter.clear();}
  if(profile && !wasOpen)$("explorer-title").focus();
  if(!profile && hash){
   history.replaceState(null,"",location.pathname);
@@ -359,6 +390,7 @@ function showExplorer(view){
  }
 }
 function hideFamily(){
+ explorerDeleter.clear();
  profileEditor.clear();
  consent.clear();
  deletion.clear();
@@ -436,6 +468,7 @@ async function loadFamily(view, create=false){
 async function loadProfiles(view){
  if(view!==familyView||!view?.familyId)return false;
  profileEditor.clear();
+ explorerDeleter.clear();
  $("profile-retry").hidden=true;
  $("profile-status").textContent="Finding your explorers…";
  try{
@@ -456,8 +489,11 @@ async function loadProfiles(view){
    open.setAttribute("aria-label","Open Vault for "+nickname);
    const edit=document.createElement("button");edit.type="button";edit.className="profile-edit-button";edit.textContent="Edit explorer";
    edit.setAttribute("aria-label","Edit explorer "+nickname);
-   edit.addEventListener("click",()=>{if(view===familyView)profileEditor.open(profile,view.ownerId);});
-   item.append(name,open,edit);
+   edit.addEventListener("click",()=>{if(view===familyView){explorerDeleter.clear();profileEditor.open(profile,view.ownerId);}});
+   const remove=document.createElement("button");remove.type="button";remove.className="profile-delete-button danger-action";remove.textContent="Delete explorer";
+   remove.setAttribute("aria-label","Delete explorer "+nickname);
+   remove.addEventListener("click",()=>{if(view===familyView){profileEditor.clear();explorerDeleter.open(profile,view.ownerId);}});
+   item.append(name,open,edit,remove);
    return item;
   });
   $("profile-list").replaceChildren(...explorers);
