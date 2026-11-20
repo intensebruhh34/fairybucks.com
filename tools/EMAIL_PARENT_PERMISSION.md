@@ -1,5 +1,7 @@
 # Email parent permission — staged implementation
 
+**Current checkpoint:** see [the November 20 launch review](../docs/reviews/pilot-launch-2026-11-20.md). Installation and initial rehearsal instructions below describe the implementation history; they are not a request to reinstall or repeat completed tests. The original version-1 activation SQL is retired and must not be used for this flow.
+
 This replaces the signed-form process. It is not a legal-compliance certification. Email-plus eligibility depends on the actual service and provider practices. The implementation sends a distinct confirmation after explicit consent; it does not treat account verification as consent.
 
 ## Merge-safe state
