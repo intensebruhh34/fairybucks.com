@@ -71,7 +71,7 @@ export function parentConsent(getClient,onPermission){
    if(!view.rehearsal){
    view.staged=true;$('consent-rehearsal-panel').hidden=false;
    $('consent-rehearsal-email').value='PREVIEW ONLY — Email permission is not active.\n\n'+parentNotice.sections.map(([title,copy])=>title+'\n'+copy).join('\n\n');
-   onPermission(true);return;
+   onPermission(false);return;
    }
   }
   $('parent-consent-panel').hidden=false;renderNotice();
