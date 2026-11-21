@@ -53,13 +53,20 @@ export function createConfirmationHandler({env,fetch:send,crypto:secure}) {
  return async request=>{
   const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
   if(request.method!=='POST'||request.headers.get('Origin'))return reply({status:'forbidden'},403);
-  const key=env('PERMISSION_WORKER_SECRET')||'';
-  if(key.length<32||request.headers.get('Authorization')!=='Bearer '+key)return reply({status:'forbidden'},403);
-  const pub=env('PARENT_EMAIL_PERMISSION_ENABLED')==='true',rehearsal=env('PARENT_PERMISSION_REHEARSAL_ENABLED')==='true';
-  if(!pub&&!rehearsal)return reply({status:'staged'},503);
+  const authorization=request.headers.get('Authorization')||'';
+  if(!/^Bearer [A-Za-z0-9_-]{32,256}$/.test(authorization))return reply({status:'forbidden'},403);
   const url=env('SUPABASE_URL'),service=env('SUPABASE_SERVICE_ROLE_KEY'),resend=env('RESEND_API_KEY');
   if(!url||!service||!resend)return reply({status:'setup_pending'},503);
   try{
+   // The scheduler's key is generated/encrypted in Vault. Only its hash is checked
+   // by a service-only RPC; no key is printed, exported, or placed in cron SQL.
+   const check=await send(url+'/rest/v1/rpc/fairybucks_check_confirmation_worker',{
+    method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},
+    body:JSON.stringify({p_secret:authorization.slice(7)})
+   });
+   if(!check.ok||await check.json()!==true)return reply({status:'forbidden'},403);
+   const pub=env('PARENT_EMAIL_PERMISSION_ENABLED')==='true',rehearsal=env('PARENT_PERMISSION_REHEARSAL_ENABLED')==='true';
+   if(!pub&&!rehearsal)return reply({status:'staged'},503);
    const bytes=await secure.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(permissionSnapshot)));
    const hash=[...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('');
    const version=permissionSnapshot.notice.version;

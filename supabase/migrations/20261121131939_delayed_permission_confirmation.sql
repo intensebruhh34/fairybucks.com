@@ -1,4 +1,5 @@
--- One hour is an operator-selected initial delay, not a statutory safe harbor.
+-- Five minutes is the operator-selected follow-up delay, not a statutory safe harbor.
+-- Corrected before installation: this migration was not installed in the hosted project.
 -- No sending, scheduler or public release is enabled by installation.
 begin;
 alter table private.fairybucks_permission_mail add column first_confirmation_attempt_at timestamptz;
@@ -164,7 +165,7 @@ begin
  if p_action='claim_confirmation' or (p_action='accepted' and exists(
   select 1 from private.fairybucks_permission_mail where id=p_job and kind='confirmation')) then
   if not exists(select 1 from private.fairybucks_email_permission_requests where id=p_request and parent_id=p_parent
-   and approved_at<=clock_timestamp()-interval '1 hour') then
+   and approved_at<=clock_timestamp()-interval '5 minutes') then
    return jsonb_build_object('status','confirming','parent_id',p_parent);end if;
  end if;
  if p_action='claim_confirmation' and exists(select 1 from private.fairybucks_permission_mail where request_id=p_request and kind='confirmation' and first_confirmation_attempt_at<=clock_timestamp()-interval '23 hours') then
@@ -193,7 +194,7 @@ begin
    where eff.notice_ready and eff.email_method_reviewed and eff.enforcement_enabled
     and eff.notice_version=p_version and eff.notice_hash=p_notice_hash
     and ((p_rehearsal and exists(select 1 from private.fairybucks_permission_rehearsals where parent_id=q.parent_id and expires_at>clock_timestamp()))
-     or (p_public and not exists(select 1 from private.fairybucks_permission_rehearsals where parent_id=q.parent_id))) and q.state='approved' and q.approved_at<=clock_timestamp()-interval '1 hour'
+     or (p_public and not exists(select 1 from private.fairybucks_permission_rehearsals where parent_id=q.parent_id))) and q.state='approved' and q.approved_at<=clock_timestamp()-interval '5 minutes'
     and q.expires_at>clock_timestamp() and m.accepted_at is null
     and (m.lease_until is null or m.lease_until<clock_timestamp())
     and (m.first_confirmation_attempt_at is null or m.first_confirmation_attempt_at>clock_timestamp()-interval '23 hours')
@@ -217,7 +218,7 @@ begin
  elsif not p_public then return jsonb_build_object('status','no_mail');end if;
  select * into r from private.fairybucks_email_permission_requests where id=p_request for update;
  if r.state<>'approved' or r.expires_at<=clock_timestamp() or r.approved_at is null
- or r.approved_at>clock_timestamp()-interval '1 hour' then return jsonb_build_object('status','no_mail');end if;
+ or r.approved_at>clock_timestamp()-interval '5 minutes' then return jsonb_build_object('status','no_mail');end if;
  if p_action='claim' then
   if exists(select 1 from private.fairybucks_permission_mail where request_id=r.id and kind='confirmation'
    and first_confirmation_attempt_at<=clock_timestamp()-interval '23 hours') then

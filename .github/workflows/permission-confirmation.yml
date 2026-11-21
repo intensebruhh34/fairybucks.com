@@ -1,26 +1,9 @@
-name: Delayed permission confirmations
+name: Permission confirmation status
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 permissions: {}
-concurrency:
-  group: permission-confirmation-dispatch
-  cancel-in-progress: false
 jobs:
-  dispatch:
-    if: vars.PERMISSION_CONFIRMATION_SCHEDULER_ENABLED == 'true'
+  instructions:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
     steps:
-      - name: Dispatch due confirmations
-        env:
-          WORKER_SECRET: ${{ secrets.PERMISSION_WORKER_SECRET }}
-        run: |
-          test -n "$WORKER_SECRET"
-          curl --silent --show-error --fail --max-time 90 \
-            --request POST \
-            --header "Authorization: Bearer $WORKER_SECRET" \
-            --header 'Content-Type: application/json' \
-            --data '{}' \
-            'https://cuyrujodyxpxzkdwxstk.supabase.co/functions/v1/parent-permission-confirmation'
+      - run: echo 'Confirmation scheduling uses Supabase Cron every minute. See tools/GUIDED_PARENT_SETUP.md. No GitHub secret or scheduler variable is needed.'
