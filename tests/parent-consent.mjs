@@ -33,7 +33,7 @@ const checkPermissionUI=async function checkPermissionUI(source,notice,contact){
   return {flow,$,state};
  }
  let s=setup();await s.flow.open('owner');
- expect(s.state.allowed&&s.state.calls===0&&s.state.authCalls===0,'Staged site performed live permission calls or blocked testing');
+ expect(!s.state.allowed&&s.state.calls===0&&s.state.authCalls===0,'Pre-launch site must deny child access without a verified rehearsal');
  expect(!s.$('consent-rehearsal-panel').hidden&&s.$('consent-rehearsal-email').value.includes('PREVIEW ONLY'),'Email preview absent');
  s.flow.clear();expect(!s.state.allowed&&s.$('consent-rehearsal-email').value==='','Sign-out retained preview');
  s=setup({rehearsal:true});await s.flow.open('owner');

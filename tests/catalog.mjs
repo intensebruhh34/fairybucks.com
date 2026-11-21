@@ -26,7 +26,7 @@ insert into auth.sessions values(gen_random_uuid(),'44a684ee-6e65-4098-80d7-3a21
 insert into families(owner_id) select id from auth.users;
 update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`);
 const legacyExplorerCheck=process.argv.includes('--explorer-without-consent');
-const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')&&!f.includes('retention_periods')&&!f.includes('delayed_permission_confirmation')&&!f.includes('guided_parent_setup')&&!f.includes('five_minute_permission_confirmation')));
+const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')&&!f.includes('retention_periods')&&!f.includes('delayed_permission_confirmation')&&!f.includes('guided_parent_setup')&&!f.includes('five_minute_permission_confirmation')&&!f.includes('fail_closed_child_permission')));
 if(!legacyExplorerCheck)await db.exec(`
 create schema vault;create schema net;create schema cron;
 create table vault.decrypted_secrets(id uuid primary key,decrypted_secret text);
@@ -47,16 +47,16 @@ if(legacyExplorerCheck){
  console.log('PASS explorer verification on a database without the staged consent migration');
  await db.close();process.exit(0);
 }
-await db.exec(readFileSync(root+'/supabase/checks/treasure_request_readiness.sql','utf8'));
-console.log('PASS treasure request readiness: reservations, decisions, captured prices, refunds and isolation');
-await db.exec(readFileSync(root+'/supabase/checks/child_mode_readiness.sql','utf8'));
- console.log('PASS child mode readiness: scope, parent-action denial, token lifecycle');
 // Test-only permissions keep legacy regression fixtures exercising their original behavior.
 // Enable enforcement only in local regression fixtures; production defaults to staged development.
 await db.exec(`update private.fairybucks_privacy_release set notice_ready=true,enforcement_enabled=true;
 insert into private.fairybucks_parent_consents(parent_id,notice_version,notice_hash,status,requested_at,verified_at,method,evidence_ref,reviewer)
 select u.id,r.notice_version,r.notice_hash,'verified',now(),now(),'signed_form','LOCAL-TEST-ONLY','Test fixture'
 from auth.users u cross join private.fairybucks_privacy_release r;`);
+await db.exec(readFileSync(root+'/supabase/checks/treasure_request_readiness.sql','utf8'));
+console.log('PASS treasure request readiness: reservations, decisions, captured prices, refunds and isolation');
+await db.exec(readFileSync(root+'/supabase/checks/child_mode_readiness.sql','utf8'));
+ console.log('PASS child mode readiness: scope, parent-action denial, token lifecycle');
 const { catalog } = await import('data:text/javascript;base64,' + Buffer.from(readFileSync(root+'/treasure-catalog.js','utf8')).toString('base64'));
 const saved = (await db.query('select shop_key, name, fairy_price, category, description from treasures order by shop_key')).rows;
 assert.deepEqual(saved, catalog.map(t => ({shop_key:t.id,name:t.name,fairy_price:t.price,category:t.category,description:t.description})));

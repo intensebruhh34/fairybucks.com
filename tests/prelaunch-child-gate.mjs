@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const root=new URL('../',import.meta.url);
+const sql=readFileSync(new URL('supabase/migrations/20261121210000_fail_closed_child_permission.sql',root),'utf8');
+assert.match(sql,/if found and not release\.enforcement_enabled then return false;end if;/);
+assert.match(sql,/private\.fairybucks_effective_permission_release\(p_parent\)/);
+assert.match(sql,/c\.method='email_plus'/);
+const consent=readFileSync(new URL('parent-consent.js',root),'utf8');
+assert.match(consent,/view\.staged=true;/);
+assert.match(consent,/onPermission\(false\);return;/);
+const setup=readFileSync(new URL('parent-setup.js',root),'utf8');
+assert.match(setup,/view\.preview=true;view\.allowed=false;/);
+assert.match(setup,/\$\('setup-preview-continue'\)\.hidden=true;/);
+console.log('PASS prelaunch child mode fails closed while private rehearsal and email-consent gates remain unchanged');
