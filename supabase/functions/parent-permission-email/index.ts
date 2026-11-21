@@ -49,6 +49,9 @@ export function noticeText(snapshot=permissionSnapshot) {
   'Notice version: '+notice.version
  ].join('\n');
 }
+export function confirmationText() {
+ return "Your parental permission has been successfully recorded!\n\nYour family is one step closer to enjoying the magic of Fairy Bucks.\n\nNo further action is required.\n\nYou can review or withdraw your permission anytime through the Fairy Bucks Parent Portal:\nhttps://fairybucks.com/auth.html\n\nFairy Bucks | ITS Security\nP.O. Box 240\nWest Warren, MA 01092\nPhone: (774) 922-5011\nSupport: support@fairybucks.com\nPrivacy Policy: https://fairybucks.com/privacy.html\n\nIf you did not authorize this permission, please contact support or withdraw permission through your Parent Portal.";
+}
 export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decode}) {
  const origin='https://fairybucks.com';
  const hex=bytes=>[...new Uint8Array(bytes)].map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -131,8 +134,8 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
      throw Error('Mail account/notice mismatch');
     const link=origin+'/permission.html#request='+id+'&token='+token;
     const text=kind==='notice'
-     ?noticeText()+'\n\nTo give permission, open this link, sign in to this same parent account if asked, read the notice and select I give permission. Opening the link alone does not approve anything.\n'+link+'\n\nThis link expires seven days after the request. If you do not want to give permission, ignore it. You can review existing records or delete your parent account in the Parent Portal.'
-     :'Your parent permission is confirmed. No further action is needed.\n\nYou can review or withdraw your permission through the Parent Portal at any time.\n\n'+noticeText()+'\n\nYou can revoke this permission at any time. Sign in at https://fairybucks.com/auth.html and select Withdraw parent permission. This ends child sessions and pauses new explorer profiles. You can still review or delete existing family records. If you did not approve, withdraw permission or contact '+permissionSnapshot.contact.supportEmail+'. Never send a password or Parent PIN.';
+     ?noticeText()+'\n\nIf you already gave permission in the Parent Portal, your approval is recorded and no further action is needed. Otherwise, to approve, open this link, sign in to the same parent account, review the notice and select I give permission. Opening the link alone does not approve anything.\n'+link+'\n\nThe link expires seven days after the request. If you do not want to give permission, ignore it. You can review existing records or delete your parent account in the Parent Portal.'
+     :confirmationText();
     const response=await send('https://api.resend.com/emails',{
      method:'POST',headers:{Authorization:'Bearer '+env('RESEND_API_KEY'),'Content-Type':'application/json',
       'Idempotency-Key':'fairybucks-permission-'+job.job_id},
