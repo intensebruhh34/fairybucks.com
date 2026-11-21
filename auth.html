@@ -57,6 +57,13 @@ body{display:block;padding:0}
 #setup-guardian,#consent-request-form input[type=checkbox]{width:auto;margin-right:8px}
 
 #parent-setup{line-height:1.6}#parent-setup>div>button{display:block;width:100%;margin-block:18px}#parent-setup details{margin-block:18px}#parent-setup select{width:100%;padding:12px;font:inherit}#setup-guardian-label{font-size:1rem;font-weight:500}#setup-notice-copy{overflow-wrap:anywhere}.setup-benefits{padding-left:24px}.setup-benefits li{margin-block:12px}
+#consent-child-access-note{font-size:1.12rem;font-weight:700;line-height:1.5;margin:12px 0 18px}
+#consent-child-access-note[hidden]{display:none}
+#consent-request-form{margin-bottom:18px}
+#consent-request{display:block;width:100%;margin-bottom:14px}
+#consent-refresh{display:block;min-height:44px;margin:12px 0 20px}
+#consent-withdraw{display:block;margin:12px 0 20px}
+#consent-withdraw[hidden]{display:none}
 </style></head><body><main class="fairy-page">
 <header class="fairy-header"><a class="nav-button" href="/">← Magical Home</a><h1>🔐 Parent Portal</h1></header>
 <div class="fairy-content portal-body">
@@ -169,6 +176,7 @@ body{display:block;padding:0}
 </details>
 <section id="parent-consent-panel" class="fairy-panel" hidden aria-labelledby="consent-title">
 <h2 id="consent-title">Parent permission</h2>
+<p id="consent-child-access-note" class="consent-access-requirement"><strong>Required for child access:</strong> Complete the permission approval through the link in your email before your children can enter their Fairy Bucks vault.</p>
 <p id="consent-status" role="status" aria-live="polite"></p>
 <details><summary>Read the parent notice</summary><div id="consent-copy"></div><p><a href="/privacy.html">Full privacy notice</a> · <a href="/support.html">Support and privacy requests</a></p></details>
 <form id="consent-request-form" hidden><label><input type="checkbox" id="consent-guardian" required> I am the parent or legal guardian. I have reviewed the parent notice and Privacy and want to receive the permission email. I understand that requesting the email does not yet give permission.</label><p>Open the emailed permission link, sign in and explicitly approve there. After approval, a separate confirmation follows with the original notice and instructions to withdraw permission.</p><button type="submit" id="consent-request">Email my permission link</button></form>
