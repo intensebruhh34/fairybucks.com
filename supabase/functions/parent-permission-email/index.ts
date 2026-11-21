@@ -53,8 +53,10 @@ export function confirmationText() {
  return "Your parental permission has been successfully recorded!\n\nYour family is one step closer to enjoying the magic of Fairy Bucks.\n\nNo further action is required.\n\nYou can review or withdraw your permission anytime through the Fairy Bucks Parent Portal:\nhttps://fairybucks.com/auth.html\n\nFairy Bucks | ITS Security\nP.O. Box 240\nWest Warren, MA 01092\nPhone: (774) 922-5011\nSupport: support@fairybucks.com\nPrivacy Policy: https://fairybucks.com/privacy.html\n\nIf you did not authorize this permission, please contact support or withdraw permission through your Parent Portal.\n\nFor your records, the original parent-permission notice is reproduced below:\n\n"+noticeText();
 }
 export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decode}) {
- // Exact, temporary staging origin alongside the production domain. No wildcards or deploy previews.
- const allowedOrigins=new Set(['https://fairybucks.com','https://fairybucks-com.netlify.app']);
+ // Production domain remains the only destination for mailed approval links.
+ const origin='https://fairybucks.com';
+ // Exact, temporary staging origin is also allowed to check consent. No wildcard preview domains.
+ const allowedOrigins=new Set([origin,'https://fairybucks-com.netlify.app']);
  const hex=bytes=>[...new Uint8Array(bytes)].map(b=>b.toString(16).padStart(2,'0')).join('');
  const encode=value=>new TextEncoder().encode(value);
  const hash=async value=>hex(await secure.subtle.digest('SHA-256',encode(value)));
