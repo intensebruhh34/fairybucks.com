@@ -15,20 +15,33 @@ begin
  insert into public.child_profiles(id,family_id,nickname) values(c_a,f_a,'Consent fixture A'),(c_b,f_b,'Consent fixture B');
  insert into private.parent_pin_security(parent_id,pin_hash) values(a,extensions.crypt('111111',extensions.gen_salt('bf',4)));
  select notice_hash,notice_version into hash,v from private.fairybucks_privacy_release;
- -- Merging/applying the foundation keeps development usable until explicit operator activation.
+ -- Pre-launch access must fail closed even when enforcement is not yet released.
  update private.fairybucks_privacy_release set notice_ready=false,enforcement_enabled=false;
  grant insert on public.child_profiles to authenticated;
  claims:=jsonb_build_object('sub',a,'session_id',s_a);
  perform set_config('request.jwt.claims',claims::text,true);perform set_config('role','authenticated',true);
- insert into public.child_profiles(family_id,nickname) values(f_a,'Staged development fixture');
+ begin insert into public.child_profiles(family_id,nickname) values(f_a,'Staged development fixture');
+  raise exception 'Staging allowed new explorer without permission';
+ exception when insufficient_privilege then null;end;
  unlock:=public.fairybucks_parent_pin('111111',false)->>'token';
- token:=public.fairybucks_start_child_session(c_a,unlock);
- if token is null then raise exception 'Staging blocked existing handoff';end if;
- if public.fairybucks_start_child_session(c_a,repeat('0',64)) is not null then raise exception 'Staging bypassed PIN';end if;
- unlock:=public.fairybucks_parent_pin('111111',false)->>'token';
- begin perform public.fairybucks_start_child_session(c_b,unlock);raise exception 'Staging bypassed family ownership';exception when insufficient_privilege then null;end;
+ begin perform public.fairybucks_start_child_session(c_a,unlock);
+  raise exception 'Staging allowed child handoff without permission';
+ exception when insufficient_privilege then null;end;
+ begin perform public.fairybucks_start_child_session(c_a,repeat('0',64));
+  raise exception 'Staging bypassed child mode restriction';
+ exception when insufficient_privilege then null;end;
+ begin perform public.fairybucks_start_child_session(c_b,unlock);
+  raise exception 'Staging bypassed family ownership';
+ exception when insufficient_privilege then null;end;
+ -- Directly inject an expiring synthetic session to verify that the child RPC
+ -- denies access even to an existing token before parent permission is released.
+ perform set_config('role','none',true);
+ token:=encode(extensions.gen_random_bytes(32),'hex');
+ insert into private.fairybucks_child_sessions(child_id,token_hash,expires_at)
+ values(c_a,extensions.digest(token,'sha256'),clock_timestamp()+interval '1 hour');
  perform set_config('role','anon',true);
- if public.fairybucks_child_action(token)->>'status'<>'active' then raise exception 'Staging blocked child view';end if;
+ if public.fairybucks_child_action(token)->>'status'<>'permission_required'
+ then raise exception 'Staging allowed child view without permission';end if;
  perform set_config('role','none',true);
  if exists(select 1 from private.fairybucks_parent_consents where parent_id=a) then raise exception 'Staging fabricated consent';end if;
  update private.fairybucks_privacy_release set enforcement_enabled=true;
