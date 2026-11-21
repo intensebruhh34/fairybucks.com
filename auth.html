@@ -54,14 +54,15 @@ body{display:block;padding:0}
 #edit-profile-gender{width:100%;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6}
 #edit-profile-cancel{margin-top:12px}
 #consent-rehearsal-email{width:100%;box-sizing:border-box;padding:12px;border:1px solid #b38b51;border-radius:9px;font:inherit;background:#fffdf6;resize:vertical}
-#consent-request-form input[type=checkbox]{width:auto;margin-right:8px}
+#setup-guardian,#consent-request-form input[type=checkbox]{width:auto;margin-right:8px}
 
+#parent-setup{line-height:1.6}#parent-setup>div>button{display:block;width:100%;margin-block:18px}#parent-setup details{margin-block:18px}#parent-setup select{width:100%;padding:12px;font:inherit}#setup-guardian-label{font-size:1rem;font-weight:500}#setup-notice-copy{overflow-wrap:anywhere}.setup-benefits{padding-left:24px}.setup-benefits li{margin-block:12px}
 </style></head><body><main class="fairy-page">
 <header class="fairy-header"><a class="nav-button" href="/">← Magical Home</a><h1>🔐 Parent Portal</h1></header>
 <div class="fairy-content portal-body">
 <p class="eyebrow">Fairybucks · Family Vault</p>
 <p><a href="/privacy.html">Privacy notice</a> · <a href="/support.html">Parent help</a></p>
-<div class="notice">For grown-ups only. Sign in to open your Family Vault and set up your explorers.</div>
+<div id="parent-entry-notice" class="notice">For grown-ups only. Sign in to open your Family Vault and set up your explorers.</div>
 <div id="message" role="status" aria-live="polite" class="hidden"></div>
 <div id="setup" class="notice" hidden>Account sign-in isn't connected yet. Enter the public Supabase publishable key in <code>auth-config.js</code> after reviewing this change. Do not use a secret key.</div>
 <div id="loading" class="notice">Preparing secure sign-in…</div>
@@ -73,7 +74,7 @@ body{display:block;padding:0}
 <button type="button" class="tab" data-tab="resend">Resend confirmation</button>
 </div>
 <form class="screen" id="login"><label for="login-email">Parent email</label><input id="login-email" type="email" autocomplete="email" required maxlength="254"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Sign in securely</button></form>
-<form class="screen" id="signup" hidden><label for="signup-email">Parent email</label><input id="signup-email" type="email" autocomplete="email" required maxlength="254"><label for="signup-password">Create a password (12+ characters)</label><input id="signup-password" type="password" autocomplete="new-password" minlength="12" required><button class="primary" type="submit">Create parent account</button><p class="muted">Only parents register. Children do not receive individual accounts.</p></form>
+<form class="screen" id="signup" hidden><h2>Create your parent account</h2><p>Help your child practice saving and budgeting—with a little Tooth Fairy magic.</p><label for="signup-email">Parent email</label><input id="signup-email" type="email" autocomplete="email" required maxlength="254"><label for="signup-password">Create a password (12+ characters, upper/lowercase, number and symbol)</label><input id="signup-password" type="password" autocomplete="new-password" minlength="12" required><button class="primary" type="submit">Create parent account</button><p class="muted">Only parents register. Children do not receive individual accounts.</p></form>
 <form class="screen" id="forgot" hidden><label for="forgot-email">Your parent email</label><input id="forgot-email" type="email" autocomplete="email" required maxlength="254"><button class="primary" type="submit">Email me a reset link</button></form>
 <form class="screen" id="resend" hidden><p>Missing your signup email, or did its link expire? Request another confirmation link. Check your spam folder and use the newest email.</p><label for="resend-email">Your parent email</label><input id="resend-email" type="email" autocomplete="email" required maxlength="254"><button class="primary" type="submit">Resend confirmation email</button><p class="muted">Already confirmed? Use Log in. For a forgotten password, use Reset password.</p></form>
 </div>
@@ -112,6 +113,42 @@ body{display:block;padding:0}
 <p><a href="/support.html">Need help or unable to verify your account?</a></p>
 <button type="button" id="account-deletion-back">Keep my account — return to portal</button>
 </section>
+<section id="parent-setup" class="fairy-panel" hidden aria-labelledby="setup-title">
+<p id="setup-progress" class="eyebrow"></p><p id="setup-email" class="muted"></p>
+<h2 id="setup-title" tabindex="-1"></h2>
+<div id="setup-permission-step">
+<p>Help your child practice saving and budgeting—with a little Tooth Fairy magic.</p>
+<ul class="setup-benefits"><li>You choose how many <strong>Fairy Bucks</strong> each tooth earns.</li><li>Your child saves and requests treasures.</li><li>You control approvals and arrange purchases separately. Approval does not place an order.</li><li>We store family information to run the experience. You can review it, withdraw permission and delete explorers.</li></ul>
+<details><summary>Read the required parent notice</summary><div id="setup-notice-copy"></div><p>Fairy Bucks is operated by <span data-contact="operatorName"></span>.</p><p data-contact="mailingAddress"></p><p>Phone: <span data-contact="phone"></span></p><p data-support-email></p><a href="/privacy.html">Full privacy notice</a></details>
+<form id="setup-permission"><label id="setup-guardian-label"><input id="setup-guardian" type="checkbox" required> I am the parent or legal guardian. I have read the parent notice and Privacy, and give permission for the described collection and use for our family vault. I can withdraw permission at any time.</label>
+<p>The full notice will be sent to your verified email before we record your approval. A separate confirmation follows later; no reply, code or further approval is needed.</p>
+<button id="setup-give-permission" class="primary" type="submit">Give permission and continue</button></form>
+<p id="setup-preview" class="notice" hidden>Development preview: email permission is not active. Continuing previews setup and does not record parental consent.</p>
+<button id="setup-preview-continue" type="button" hidden>Continue setup preview</button>
+</div>
+<div id="setup-pin-step" hidden>
+<p>This keeps grown-up settings and treasure approvals in your hands.</p>
+<form id="setup-pin"><label for="setup-pin-new">Create your six-digit Parent PIN</label><input id="setup-pin-new" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required><label for="setup-pin-confirm">Confirm Parent PIN</label><input id="setup-pin-confirm" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required><button class="primary" type="submit">Create PIN and continue</button></form>
+</div>
+<div id="setup-explorer-step" hidden>
+<form id="setup-explorer"><label for="setup-nickname">Explorer nickname</label><input id="setup-nickname" maxlength="35" autocomplete="off" required><p class="muted">A nickname is enough. Please avoid a full name.</p>
+<label for="setup-reward">Fairy Bucks per tooth</label><input id="setup-reward" type="number" min="1" max="100" step="1" inputmode="numeric" value="5" required><p class="muted">Choose 1–100 Fairy Bucks. This family setting applies to future tooth rewards for all your explorers.</p>
+<details><summary>Optional explorer details</summary><label for="setup-age">Age (optional, 2–18)</label><input id="setup-age" type="number" min="2" max="18" step="1" inputmode="numeric"><label for="setup-gender">Gender (optional)</label><select id="setup-gender"><option value="rather-not-say">Rather not say</option><option value="boy">Boy</option><option value="girl">Girl</option></select></details>
+<div id="setup-unlock-area" hidden><label for="setup-explorer-pin">Parent PIN</label><input id="setup-explorer-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off"><p><a href="/auth.html#parent-only">Forgot your PIN? Open Parent controls</a></p></div>
+<button class="primary" type="submit">Save explorer and continue</button></form>
+</div>
+<div id="setup-finish-step" hidden>
+<p>Your Family Vault is ready. Record a lost tooth when it happens, then help your explorer save for a treasure.</p>
+<button id="setup-vault" type="button" class="primary">Explore the Family Vault</button>
+<div id="setup-handoff-unlock" hidden><label for="setup-handoff-pin">Parent PIN to open child mode</label><input id="setup-handoff-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+<button id="setup-handoff" type="button" class="primary">Hand Over the Magic</button>
+<p class="muted">Hand Over the Magic signs this tab out of the parent account and opens the child vault. Keep other parent tabs away from children.</p>
+<p>The longer welcome guide and Parent FAQ are always available in your Parent Portal.</p>
+</div>
+<p id="setup-status" role="status" aria-live="polite"></p><button id="setup-retry" type="button" hidden>Check setup again</button>
+<p><button id="setup-parent-only" type="button">Review existing records or manage my account</button></p>
+</section>
+
 <section id="parent-help" hidden aria-label="Parent guide and help">
 <p><button type="button" id="pin-setup-open" hidden>Create Parent PIN</button></p>
 <details class="fairy-panel"><summary>Account, privacy and support</summary><p data-support-email><a href="mailto:support@fairybucks.com">support@fairybucks.com</a></p><p><a href="/support.html">Parent help</a> · <a href="/privacy.html">Privacy notice</a></p><button type="button" id="account-deletion-open">Delete account and family data</button></details>
@@ -134,7 +171,7 @@ body{display:block;padding:0}
 <h2 id="consent-title">Parent permission</h2>
 <p id="consent-status" role="status" aria-live="polite"></p>
 <details><summary>Read the parent notice</summary><div id="consent-copy"></div><p><a href="/privacy.html">Full privacy notice</a> · <a href="/support.html">Support and privacy requests</a></p></details>
-<form id="consent-request-form" hidden><label><input type="checkbox" id="consent-guardian" required> I am the parent or legal guardian. I have read the parent notice and Privacy, and want a permission email for the described family-vault use.</label><p>Requesting an email does not grant permission. Read the email and approve on its notice page; we will then send a separate confirmation. No printed form or signature is needed.</p><button type="submit" id="consent-request">Send permission email</button></form>
+<form id="consent-request-form" hidden><label><input type="checkbox" id="consent-guardian" required> I am the parent or legal guardian. I have read the parent notice and Privacy, and give permission for the described family-vault collection and use. I can withdraw permission at any time.</label><p>We submit the full notice to your verified parent email before recording your approval. A separate confirmation follows later; no reply, code or further approval is needed.</p><button type="submit" id="consent-request">Give permission and continue</button></form>
 <button type="button" id="consent-refresh">Refresh permission status</button>
 <button type="button" id="consent-withdraw" hidden>Withdraw parent permission</button>
 <p>You can review existing records or use Delete account and family data without granting child-mode permission.</p>
@@ -302,6 +339,7 @@ import { accountDeletion } from "/account-deletion.js";
 import { explorerDeletion } from "/explorer-deletion.js";
 import { renderContact } from "/site-contact.js";
 import { parentPinRecovery } from "/parent-pin-recovery.js";
+import {parentSetup} from "/parent-setup.js";
 import { parentGuide } from "/parent-guide.js";
 import { explorerWallet } from "/explorer-wallet.js";
 import { explorerRequests } from "/explorer-requests.js";
@@ -390,6 +428,7 @@ function showExplorer(view){
  }
 }
 function hideFamily(){
+ onboarding.clear();
  explorerDeleter.clear();
  profileEditor.clear();
  consent.clear();
@@ -420,9 +459,18 @@ function hideFamily(){
  $("explorer-title").textContent="";
  $("explorer-shop").href="/#shop";
 }
-function tab(which){for(const t of document.querySelectorAll("[data-tab]"))t.classList.toggle("active",t.dataset.tab===which);for(const id of ["login","signup","forgot","resend"])$(id).hidden=id!==which;$("auth-area").hidden=false;$("new-password").hidden=true;hideFamily();}
+function tab(which){$("parent-entry-notice").hidden=false;for(const t of document.querySelectorAll("[data-tab]"))t.classList.toggle("active",t.dataset.tab===which);for(const id of ["login","signup","forgot","resend"])$(id).hidden=id!==which;$("auth-area").hidden=false;$("new-password").hidden=true;hideFamily();}
+const onboarding=parentSetup(()=>client,user=>openPortal(user));
 function signed(user){
  hideFamily();
+ $("parent-entry-notice").hidden=true;
+ $("auth-area").hidden=true;$("new-password").hidden=true;$("loading").hidden=true;
+ if(location.hash==="#parent-only" || explorerHash())openPortal(user);
+ else onboarding.open(user);
+}
+function openPortal(user){
+ hideFamily();
+ $("parent-entry-notice").hidden=true;
  $("auth-area").hidden=true;
  $("new-password").hidden=true;
  $("signed-in").hidden=true;
@@ -558,6 +606,7 @@ async function initialize(){
  // cannot make an expired/invalid confirmation or recovery link appear successful.
  client=createClient(cfg.url,cfg.publishableKey,{auth:{detectSessionInUrl:false,autoRefreshToken:true,persistSession:true}});
  client.auth.onAuthStateChange((evt,session)=>{
+  if(onboarding.accountChanged(session?.user?.id))tab("login");
   if(deletion.accountChanged(session?.user?.id))tab("login");
   if(pinRecovery.accountChanged(session?.user?.id))tab("login");
   if(evt==="PASSWORD_RECOVERY")newPassword(false);
@@ -579,7 +628,7 @@ async function initialize(){
   if(!type && callback?.data?.redirectType)type=callback.data.redirectType;
   const {data,error}=callback||await client.auth.getSession();if(error)throw error;
   if(hasTokens && data.session?.user){try{clearChildToken();}catch{ /* Storage may be disabled. */ }}
-  history.replaceState(null,"",location.pathname+(hasTokens?"":explorerHash()));
+  history.replaceState(null,"",location.pathname+(hasTokens?"":(location.hash==="#parent-only"?"#parent-only":explorerHash())));
   $("loading").hidden=true;
   if(type==="recovery" && data.session){newPassword(false);}
   else if(type==="invite" && data.session){newPassword(true);}
@@ -637,7 +686,7 @@ for(const id of ["parent-faq","print-fairy-bucks"]){
   event.preventDefault(); $(id).open=true; $(id).scrollIntoView({behavior:"smooth",block:"start"});
  });
 }
-$("signup").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {data,error}=await client.auth.signUp({email:$("signup-email").value.trim(),password:$("signup-password").value,options:{emailRedirectTo:target}});$("signup-password").value="";if(error)throw error;if(data?.session){signed(data.user);message("Your parent account is signed in.","ok");return;}message("Check your email for a confirmation link. Missing it? Choose Resend confirmation. If you already have an account, use Log in or Reset password.","ok");});});
+$("signup").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {data,error}=await client.auth.signUp({email:$("signup-email").value.trim(),password:$("signup-password").value,options:{emailRedirectTo:target}});$("signup-password").value="";if(error)throw error;if(data?.session){signed(data.user);message("Your parent account is signed in.","ok");return;}message("Check your email and select Confirm your email. The link brings you straight back to family setup. Missing it? Choose Resend confirmation and check spam. Already registered? Use Log in or Reset password.","ok");});});
 $("resend").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.resend({type:"signup",email:$("resend-email").value.trim(),options:{emailRedirectTo:target}});if(error)throw error;message("If this address has a signup awaiting confirmation, another email has been requested. Check your inbox and spam folder; use the newest link. Already confirmed? Use Log in or Reset password.","ok");});});
 $("login").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {data,error}=await client.auth.signInWithPassword({email:$("login-email").value.trim(),password:$("login-password").value});if(error)throw error;signed(data.user);message("Signed in successfully.","ok");});});
 $("forgot").addEventListener("submit",e=>{e.preventDefault();submit(e.currentTarget,async()=>{const {error}=await client.auth.resetPasswordForEmail($("forgot-email").value.trim(),{redirectTo:target});if(error)throw error;message("If that email has an account, you'll receive a reset link.","ok");});});

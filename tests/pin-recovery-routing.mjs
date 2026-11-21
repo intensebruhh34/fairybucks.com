@@ -18,7 +18,7 @@ async function route(hash,search='',child=false,session=true,proof='ready',optio
  explorerDeletion:()=>({clear(){},open(){}}),explorerProfileEditor:()=>({clear(){},open(){}}),parentConsent:()=>({clear(){},open(){}}),
  accountDeletion:()=>({clear(){},accountChanged(){return false;}}),
  explorerWallet:()=>wallet,explorerRequests:()=>requests,
- parentGuide:()=>({clear(){},open(){observed.signed++;}}),
+ parentSetup:(_client,done)=>({clear(){},open(user){done(user);},accountChanged(){return false;}}),parentGuide:()=>({clear(){},open(){observed.signed++;}}),
  parentPinRecovery:(_client,_target,onOpen)=>({clear(){},accountChanged(){return false;},async open(){onOpen();observed.recovery++;}}),
  childToken:()=>child?'synthetic-child-session':null,storeChildToken(){},clearChildToken(){observed.childCleared++;}};
  vm.createContext(context);vm.runInContext(source,context);await context.ready;

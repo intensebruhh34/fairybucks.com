@@ -48,7 +48,7 @@ async function check(action='inspect'){
   $('permission-retry').hidden=false;
   $('permission-status').textContent={
    requested:'Read the notice below, then choose whether to give permission.',
-   confirming:'Your approval was received. We will automatically send a confirmation after at least one hour. You can close this page; child mode stays unavailable until confirmation is sent.',
+   confirming:'Your approval was received. A separate confirmation email follows later; no reply, code or further approval is needed. Continue in the Parent Portal.',
    email_retry:'Your approval was received, but the confirmation email could not be confirmed. Select Check again to retry.',
    verified:'Permission is recorded and your confirmation email has been submitted for delivery. You can continue in the Parent Portal.'
   }[data.status];

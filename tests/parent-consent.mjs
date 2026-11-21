@@ -7,7 +7,7 @@ const {parentNotice}=await import(moduleFrom(readFileSync(new URL('parent-notice
 const {siteContact}=await import(moduleFrom(readFileSync(new URL('site-contact.js',root),'utf8')));
 const contact={operatorName:siteContact.operatorName,mailingAddress:siteContact.mailingAddress,phone:siteContact.phone,supportEmail:siteContact.supportEmail};
 const hash=createHash('sha256').update(JSON.stringify({notice:parentNotice,contact})).digest('hex');
-assert.ok(readFileSync(new URL('supabase/migrations/20261117010000_email_parent_consent.sql',root),'utf8').includes(hash),'Notice/database fingerprint mismatch');
+assert.ok(readFileSync(new URL('supabase/migrations/20261121160000_guided_parent_setup.sql',root),'utf8').includes(hash),'Notice/database fingerprint mismatch');
 assert.equal(siteContact.parentPermissionEnabled,false);
 assert.equal(siteContact.privacyNoticeReviewed,false);
 const checkPermissionUI=async function checkPermissionUI(source,notice,contact){
@@ -25,7 +25,7 @@ const checkPermissionUI=async function checkPermissionUI(source,notice,contact){
    functions:{invoke:async(name,args)=>{
     state.calls++;if(state.throwError)throw Error('network');
     if(state.handler)return state.handler(name,args);
-    if(args.body.action==='request')state.status='requested';
+    if(args.body.action==='give_permission')state.status='requested';
     if(args.body.action==='withdraw')state.status='withdrawn';
     return {data:{status:state.status,parent_id:state.owner,version:notice.version,notice_hash:'0'.repeat(64)}};
    }}};

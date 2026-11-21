@@ -10,6 +10,7 @@ declare
 begin
  insert into auth.users(id,email,email_confirmed_at) values(a,a::text||'@example.test',now()),(b,b::text||'@example.test',now());
  insert into auth.sessions(id,user_id) values(sa,a),(sb,b);
+ update private.fairybucks_privacy_release set notice_version=2;
  select notice_version,notice_hash into v,h from private.fairybucks_privacy_release;
  select id into fa from public.families where owner_id=a limit 1;
  if fa is null then fa:=gen_random_uuid();insert into public.families(id,owner_id) values(fa,a);end if;
@@ -104,7 +105,7 @@ begin
  if not exists(select 1 from private.fairybucks_consent_events where parent_id=a and event='verified' and reviewer='permission-email-rehearsal') then raise exception 'Rehearsal evidence not labelled';end if;
  -- Test evidence must not become a launch approval after the private selection is removed.
  delete from private.fairybucks_permission_rehearsals where parent_id=a;
- update private.fairybucks_privacy_release set notice_ready=true,enforcement_enabled=true,email_method_reviewed=true;
+ update private.fairybucks_privacy_release set notice_version=2,notice_ready=true,enforcement_enabled=true,email_method_reviewed=true;
  if private.fairybucks_child_permission(a) then raise exception 'Rehearsal evidence counted as launch permission';end if;
  update private.fairybucks_privacy_release set notice_ready=false,enforcement_enabled=false,email_method_reviewed=false;
  insert into private.fairybucks_permission_rehearsals(parent_id,expires_at) values(a,clock_timestamp()+interval '1 hour');

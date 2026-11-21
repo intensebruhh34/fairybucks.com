@@ -32,7 +32,7 @@ begin
    where s.child_id=c.id and c.family_id=f.id and f.owner_id=p_parent;
   return jsonb_build_object('status','withdrawn','parent_id',p_parent,'version',release.notice_version,'notice_hash',release.notice_hash);
  end if;
- if release.singleton is null or not release.notice_ready or not release.email_method_reviewed
+ if release.singleton is null or not release.notice_ready or not release.email_method_reviewed or not release.enforcement_enabled
   or p_version is distinct from release.notice_version or p_notice_hash is distinct from release.notice_hash then
   return jsonb_build_object('status','setup_pending','parent_id',p_parent);end if;
  select * into r from private.fairybucks_email_permission_requests where parent_id=p_parent for update;
@@ -74,7 +74,7 @@ begin
  if r.id is null then result_status:='needed';
  elsif r.state='withdrawn' then result_status:='withdrawn';
  elsif r.notice_version<>release.notice_version or r.notice_hash<>release.notice_hash or r.parent_email<>email
-   or (r.expires_at<=clock_timestamp() and r.state<>'verified') then result_status:='needed';
+   or (r.expires_at<=clock_timestamp() and r.state not in ('approved','verified')) then result_status:='needed';
  elsif r.state='verified' and exists(select 1 from private.fairybucks_parent_consents
   where parent_id=p_parent and notice_version=r.notice_version and notice_hash=r.notice_hash and status='verified'
    and method='email_plus') then result_status:='verified';
@@ -91,6 +91,15 @@ begin
     update private.fairybucks_email_permission_requests set state='approved',approved_at=clock_timestamp()
      where id=r.id returning * into r;
     insert into private.fairybucks_permission_mail(request_id,kind) values(r.id,'confirmation') on conflict do nothing;
+    if release.notice_version>=3 then
+     update private.fairybucks_parent_consents set status='verified',verified_at=clock_timestamp(),
+      method='email_plus',evidence_ref=r.id::text,reviewer=case when exists(select 1 from private.fairybucks_permission_rehearsals where parent_id=p_parent) then 'permission-email-rehearsal' else 'permission-email-service' end
+      where parent_id=p_parent and notice_version=r.notice_version and notice_hash=r.notice_hash and status='requested';
+     if not found then raise exception 'Permission request changed';end if;
+     insert into private.fairybucks_consent_events(parent_id,notice_version,notice_hash,event,evidence_ref,reviewer)
+      select p_parent,r.notice_version,r.notice_hash,'verified',r.id::text,reviewer from private.fairybucks_parent_consents
+       where parent_id=p_parent and notice_version=r.notice_version;
+    end if;
     result_status:='confirming';
    end if;
   end if;
@@ -128,17 +137,19 @@ begin
     -- A provider acknowledgement is a delivery attempt, not proof of inbox receipt.
     update private.fairybucks_parent_consents set status='verified',verified_at=clock_timestamp(),
       method='email_plus',evidence_ref=r.id::text,reviewer=case when exists(select 1 from private.fairybucks_permission_rehearsals where parent_id=p_parent) then 'permission-email-rehearsal' else 'permission-email-service' end
-     where parent_id=p_parent and notice_version=r.notice_version and notice_hash=r.notice_hash and status='requested';
+     where parent_id=p_parent and notice_version=r.notice_version and notice_hash=r.notice_hash and status in ('requested','verified');
     if not found then raise exception 'Permission request changed';end if;
     update private.fairybucks_email_permission_requests set state='verified',confirmation_sent_at=clock_timestamp() where id=r.id;
     insert into private.fairybucks_consent_events(parent_id,notice_version,notice_hash,event,evidence_ref,reviewer)
-     values(p_parent,r.notice_version,r.notice_hash,'verified',r.id::text,case when exists(select 1 from private.fairybucks_permission_rehearsals where parent_id=p_parent) then 'permission-email-rehearsal' else 'permission-email-service' end);
+     select p_parent,r.notice_version,r.notice_hash,'verified',r.id::text,case when exists(select 1 from private.fairybucks_permission_rehearsals where parent_id=p_parent) then 'permission-email-rehearsal' else 'permission-email-service' end
+     where not exists(select 1 from private.fairybucks_consent_events where parent_id=p_parent and event='verified' and evidence_ref=r.id::text);
     result_status:='verified';
    end if;
   end if;
  end if;
  return jsonb_build_object('status',result_status,'parent_id',p_parent,'request_id',r.id,
-  'version',release.notice_version,'notice_hash',release.notice_hash);
+  'version',release.notice_version,'notice_hash',release.notice_hash,
+  'permission_allowed',r.state in ('approved','verified') and private.fairybucks_child_permission(p_parent));
 end $$;
 revoke all on function private.fairybucks_email_permission_core(text,uuid,uuid,integer,text,uuid,text,boolean,uuid,uuid,text) from public,anon,authenticated,service_role;
 

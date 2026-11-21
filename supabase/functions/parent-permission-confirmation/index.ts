@@ -2,7 +2,7 @@
 // Keep this snapshot identical to parent-notice.js/site-contact.js; tests enforce parity.
 export const permissionSnapshot = {
   "notice": {
-    "version": 2,
+    "version": 3,
     "title": "Permission for your family's Fairy Vault",
     "sections": [
       [
@@ -27,7 +27,7 @@ export const permissionSnapshot = {
       ],
       [
         "How email permission works",
-        "After confirming your parent account email, request a permission email. Read the notice in that email, open its secure link, sign in to the same parent account if needed, and affirm that you are the parent or legal guardian and consent to the described collection and use. We send a separate confirmation explaining how to withdraw permission. Child mode and new explorer profiles are enabled only after that confirmation is accepted for delivery. Links expire after seven days. If you decline or do not approve, child mode stays unavailable; you can still review existing records, get help or delete your account. No printed form, signature, payment or government ID is requested."
+        "First verify your parent account email. During setup, read this notice and explicitly confirm that you are the parent or legal guardian and give permission for the described collection and use. We submit the full notice to your verified email before recording your approval. Once your approval is recorded, you can finish setup and open child mode. We send a separate confirmation after a delay; it requires no reply, code or further approval and explains how to withdraw permission. If confirmation cannot be submitted within seven days, child access pauses until the issue is resolved. Email permission links expire after seven days. If you decline or do not approve, child mode stays unavailable; you can still review existing records, get help or delete your account. No printed form, signature, payment or government ID is requested."
       ]
     ]
   },
@@ -81,7 +81,7 @@ export function createConfirmationHandler({env,fetch:send,crypto:secure}) {
      const response=await send('https://api.resend.com/emails',{
       method:'POST',headers:{Authorization:'Bearer '+resend,'Content-Type':'application/json','Idempotency-Key':'fairybucks-permission-'+job.job_id},
       body:JSON.stringify({from:'Fairy Bucks <no-reply@fairybucks.com>',to:[job.email],reply_to:permissionSnapshot.contact.supportEmail,
-       subject:'Fairy Bucks permission confirmation',text:'You gave permission for your family to use Fairy Bucks.\n\n'+noticeText()+'\n\nYou can revoke this permission at any time. Sign in at https://fairybucks.com/auth.html and select Withdraw parent permission. This ends child sessions and pauses new explorer profiles. If you did not approve, withdraw permission or contact '+permissionSnapshot.contact.supportEmail+'. Never send a password or Parent PIN.'})
+       subject:'Fairy Bucks permission confirmation',text:'Your parent permission is confirmed. No further action is needed.\n\nYou can review or withdraw your permission through the Parent Portal at any time.\n\n'+noticeText()+'\n\nYou can revoke this permission at any time. Sign in at https://fairybucks.com/auth.html and select Withdraw parent permission. This ends child sessions and pauses new explorer profiles. If you did not approve, withdraw permission or contact '+permissionSnapshot.contact.supportEmail+'. Never send a password or Parent PIN.'})
      });
      if(!response.ok)throw Error('Provider failed');const accepted=await response.json();
      if(typeof accepted.id!=='string'||!accepted.id)throw Error('Provider ID missing');

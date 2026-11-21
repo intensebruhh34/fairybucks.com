@@ -2,7 +2,7 @@
 // Keep this snapshot identical to parent-notice.js/site-contact.js; tests enforce parity.
 export const permissionSnapshot = {
   "notice": {
-    "version": 2,
+    "version": 3,
     "title": "Permission for your family's Fairy Vault",
     "sections": [
       [
@@ -27,7 +27,7 @@ export const permissionSnapshot = {
       ],
       [
         "How email permission works",
-        "After confirming your parent account email, request a permission email. Read the notice in that email, open its secure link, sign in to the same parent account if needed, and affirm that you are the parent or legal guardian and consent to the described collection and use. We send a separate confirmation explaining how to withdraw permission. Child mode and new explorer profiles are enabled only after that confirmation is accepted for delivery. Links expire after seven days. If you decline or do not approve, child mode stays unavailable; you can still review existing records, get help or delete your account. No printed form, signature, payment or government ID is requested."
+        "First verify your parent account email. During setup, read this notice and explicitly confirm that you are the parent or legal guardian and give permission for the described collection and use. We submit the full notice to your verified email before recording your approval. Once your approval is recorded, you can finish setup and open child mode. We send a separate confirmation after a delay; it requires no reply, code or further approval and explains how to withdraw permission. If confirmation cannot be submitted within seven days, child access pauses until the issue is resolved. Email permission links expire after seven days. If you decline or do not approve, child mode stays unavailable; you can still review existing records, get help or delete your account. No printed form, signature, payment or government ID is requested."
       ]
     ]
   },

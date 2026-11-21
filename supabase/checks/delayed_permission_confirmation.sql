@@ -3,7 +3,7 @@ do $$
 declare a uuid:=gen_random_uuid();sid uuid:=gen_random_uuid();rid uuid:=gen_random_uuid();job uuid:=gen_random_uuid();
  lease uuid:=gen_random_uuid();other_lease uuid:=gen_random_uuid();v integer;h text;x jsonb;
 begin
- update private.fairybucks_privacy_release set notice_ready=true,email_method_reviewed=true,enforcement_enabled=true;
+ update private.fairybucks_privacy_release set notice_version=2,notice_ready=true,email_method_reviewed=true,enforcement_enabled=true;
  select notice_version,notice_hash into v,h from private.fairybucks_privacy_release;
  insert into auth.users(id,email,email_confirmed_at) values(a,a::text||'@example.test',now());
  insert into auth.sessions(id,user_id) values(sid,a);

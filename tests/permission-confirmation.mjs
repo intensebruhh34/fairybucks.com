@@ -13,7 +13,7 @@ function setup(options={}){
   if(url.includes('/rpc/')){
    let data;
    if(b.p_action==='list')data={requests:[id]};
-   if(b.p_action==='claim')data=options.noMail?{status:'no_mail'}:{status:'mail_claimed',request_id:id,job_id:job,kind:'confirmation',email:'parent@example.test',version:2,notice_hash:options.badHash?'bad':hash};
+   if(b.p_action==='claim')data=options.noMail?{status:'no_mail'}:{status:'mail_claimed',request_id:id,job_id:job,kind:'confirmation',email:'parent@example.test',version:parent.parentNotice.version,notice_hash:options.badHash?'bad':hash};
    if(b.p_action==='accepted'){accepted++;data={status:options.withdrawn?'no_mail':'verified'};}
    return new Response(JSON.stringify(data));
   }
@@ -30,7 +30,7 @@ s=setup({noMail:true});r=await s.handler(s.request());assert.equal(s.mails.lengt
 s=setup({badHash:true});r=await s.handler(s.request());assert.equal(s.mails.length,0);assert.equal(r.status,503);
 for(const options of [{mailFail:true},{noId:true}]){s=setup(options);r=await s.handler(s.request());assert.equal(r.status,503);assert.equal(s.accepted,0);}
 s=setup();r=await s.handler(s.request());assert.equal((await r.json()).sent,1);assert.equal(s.accepted,1);
-const mail=JSON.parse(s.mails[0].body);assert.deepEqual(mail.to,['parent@example.test']);assert.ok(mail.text.includes('revoke this permission'));for(const [,text]of parent.parentNotice.sections)assert.ok(mail.text.includes(text));
+const mail=JSON.parse(s.mails[0].body);assert.deepEqual(mail.to,['parent@example.test']);assert.ok(mail.text.includes('revoke this permission'));assert.ok(mail.text.startsWith('Your parent permission is confirmed. No further action is needed.'));assert.ok(mail.text.includes('You can review or withdraw your permission through the Parent Portal at any time.'));for(const [,text]of parent.parentNotice.sections)assert.ok(mail.text.includes(text));
 assert.equal(s.mails[0].headers['Idempotency-Key'],'fairybucks-permission-'+job);
 s=setup({withdrawn:true});r=await s.handler(s.request());assert.equal((await r.json()).sent,0);
 assert.ok(!JSON.stringify(await (await s.handler(s.request('wrong'))).json()).includes('PRIVATE-'));
