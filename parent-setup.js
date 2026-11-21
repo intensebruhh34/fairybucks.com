@@ -11,6 +11,7 @@ export function parentSetup(getClient,onDone){
   for(const id of ['setup-pin','setup-explorer'])$(id).reset();
   $('setup-guardian').checked=false;$('setup-handoff-pin').value='';
   $('setup-status').textContent='';$('setup-notice-copy').replaceChildren();
+  $('setup-check-permission').hidden=true;
  }
  function show(view,step){
   if(view!==active)return;
@@ -32,7 +33,8 @@ export function parentSetup(getClient,onDone){
   if(view!==active)return false;
   if(error||data?.parent_id!==view.user.id||data.version!==parentNotice.version||data.notice_hash!==view.hash)
    throw Error('We couldn’t confirm parent permission. Try again. You can still review existing records in the Parent Portal.');
-  if(data.status==='verified'||data.permission_allowed===true)return true;
+  if(data.status==='verified'||data.permission_allowed===true){view.awaitingEmail=false;return true;}
+  if(data.status==='requested'||data.status==='confirming')view.awaitingEmail=true;
   if(action==='give_permission'){
    if(data.status==='requested'){view.awaitingEmail=true;return false;}
    throw Error(data.status==='rate_limited'?'Please wait before trying again. Permission emails are limited to one per five minutes and six per day.':'We couldn’t send your permission email. Check your connection and try again.');
@@ -41,7 +43,13 @@ export function parentSetup(getClient,onDone){
  }
  async function next(view){
   if(view!==active)return;
-  if(!view.allowed){show(view,'permission');return;}
+  if(!view.allowed){
+   show(view,'permission');
+   $('setup-check-permission').hidden=!view.awaitingEmail;
+   if(view.awaitingEmail)$('setup-status').textContent='Check your parent email and approve through the link. Then return here and select “I approved — Continue setup.” No child access is granted until approval is verified.';
+   return;
+  }
+  $('setup-check-permission').hidden=true;
   const d=await rpc(view);if(!d)return;
   view.data=d;
   if(d.status!=='ready')throw Error('Setup is unavailable. Please try again.');
@@ -83,19 +91,27 @@ export function parentSetup(getClient,onDone){
     // Existing development access is not consent. Never fake a successful approval.
     view.preview=true;view.allowed=false;
     $('setup-preview').hidden=false;$('setup-give-permission').hidden=true;
+    $('setup-check-permission').hidden=true;
     $('setup-guardian-label').hidden=true;$('setup-preview-continue').hidden=true;
     $('setup-status').textContent='New explorer setup is paused until parent permission is available. You can still sign in and review existing family records.';
     return;
    }
    $('setup-preview').hidden=true;$('setup-give-permission').hidden=false;
    $('setup-guardian-label').hidden=false;$('setup-preview-continue').hidden=true;
+   $('setup-check-permission').hidden=true;
    view.allowed=await permission(view);if(view!==active)return;await next(view);
   });
  }
  $('setup-permission').addEventListener('submit',event=>{
   event.preventDefault();if(!$('setup-guardian').checked)return;
-  return run(async view=>{view.allowed=await permission(view,'give_permission');if(view===active){await next(view);if(view.awaitingEmail){$('setup-status').textContent='Check your verified parent email, open the permission link, and approve there. Then return here and use Try again to continue.';view.awaitingEmail=false;}}});
+  return run(async view=>{view.allowed=await permission(view,'give_permission');if(view===active)await next(view);});
  });
+ $('setup-check-permission').addEventListener('click',()=>run(async view=>{
+  view.allowed=await permission(view);
+  if(view!==active)return;
+  await next(view);
+  if(!view.allowed)$('setup-status').textContent='Approval is not recorded yet. Open your emailed link, approve it, then select “I approved — Continue setup” again.';
+ }));
  $('setup-preview-continue').addEventListener('click',()=>run(next));
  $('setup-pin').addEventListener('submit',event=>{
   event.preventDefault();return run(async view=>{
