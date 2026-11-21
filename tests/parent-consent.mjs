@@ -7,7 +7,7 @@ const {parentNotice}=await import(moduleFrom(readFileSync(new URL('parent-notice
 const {siteContact}=await import(moduleFrom(readFileSync(new URL('site-contact.js',root),'utf8')));
 const contact={operatorName:siteContact.operatorName,mailingAddress:siteContact.mailingAddress,phone:siteContact.phone,supportEmail:siteContact.supportEmail};
 const hash=createHash('sha256').update(JSON.stringify({notice:parentNotice,contact})).digest('hex');
-assert.ok(readFileSync(new URL('supabase/migrations/20261121212500_parent_notice_v4_email_link.sql',root),'utf8').includes(hash),'Notice/database fingerprint mismatch');
+assert.ok(readFileSync(new URL('supabase/migrations/20261121233000_parent_notice_v5_netlify_host.sql',root),'utf8').includes(hash),'Notice/database fingerprint mismatch');
 assert.equal(siteContact.parentPermissionEnabled,false);
 assert.equal(siteContact.privacyNoticeReviewed,false);
 const checkPermissionUI=async function checkPermissionUI(source,notice,contact){
@@ -62,7 +62,7 @@ console.log(await checkPermissionUI(readFileSync(new URL('parent-consent.js',roo
 
 const page=readFileSync(new URL('auth.html',root),'utf8');
 const privacy=readFileSync(new URL('privacy.html',root),'utf8');
-assert.equal(parentNotice.version,4,'Notice upgrade must increment version');
+assert.equal(parentNotice.version,5,'Notice upgrade must increment version');
 assert.match(parentNotice.sections.at(-1)[1],/Requesting the email does not grant child access/);
 assert.match(parentNotice.sections.at(-1)[1],/unique link sent to your verified email/);
 assert.match(page,/id="consent-child-access-note"/);
@@ -70,3 +70,6 @@ assert.match(page,/Required for child access:/);
 assert.match(page,/#consent-request-form\{margin-bottom:18px\}/);
 assert.match(page,/#consent-refresh\{display:block;min-height:44px;margin:12px 0 20px\}/);
 assert.match(privacy,/checkbox does not grant child access/);
+
+assert.match(parentNotice.sections.find(([name])=>name==='Who helps run it')[1],/Netlify hosts the website/);
+assert.match(readFileSync(new URL('privacy.html',root),'utf8'),/Netlify:<\/strong> hosts the website/);
