@@ -64,6 +64,9 @@ body{display:block;padding:0}
 #consent-refresh{display:block;min-height:44px;margin:12px 0 20px}
 #consent-withdraw{display:block;margin:12px 0 20px}
 #consent-withdraw[hidden]{display:none}
+#setup-check-permission{display:block;width:100%;margin-top:14px}
+#setup-check-permission[hidden]{display:none}
+#setup-parent-only{font-weight:650}
 </style></head><body><main class="fairy-page">
 <header class="fairy-header"><a class="nav-button" href="/">← Magical Home</a><h1>🔐 Parent Portal</h1></header>
 <div class="fairy-content portal-body">
@@ -130,6 +133,7 @@ body{display:block;padding:0}
 <form id="setup-permission"><label id="setup-guardian-label"><input id="setup-guardian" type="checkbox" required> I am the parent or legal guardian. I have reviewed the parent notice and Privacy and want to receive the permission email. I understand that requesting the email does not yet give permission.</label>
 <p>Request the full permission notice by email. Open the email link, sign in, and approve there; this form does not approve child access. A separate confirmation follows after you approve.</p>
 <button id="setup-give-permission" class="primary" type="submit">Email my permission link</button></form>
+<button id="setup-check-permission" class="primary" type="button" hidden>I approved — Continue setup</button>
 <p id="setup-preview" class="notice" hidden>Pre-launch: parent permission is not yet available for general accounts. New explorer setup and child mode are paused. Existing family records remain available to parents.</p>
 <button id="setup-preview-continue" type="button" hidden disabled>Continue setup preview</button>
 </div>
@@ -153,7 +157,7 @@ body{display:block;padding:0}
 <p>The longer welcome guide and Parent FAQ are always available in your Parent Portal.</p>
 </div>
 <p id="setup-status" role="status" aria-live="polite"></p><button id="setup-retry" type="button" hidden>Check setup again</button>
-<p><button id="setup-parent-only" type="button">Review existing records or manage my account</button></p>
+<p><button id="setup-parent-only" type="button">View existing records or account settings (no permission needed)</button></p>
 </section>
 
 <section id="parent-help" hidden aria-label="Parent guide and help">
