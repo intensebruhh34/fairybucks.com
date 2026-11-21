@@ -2,7 +2,7 @@
 // Keep this snapshot identical to parent-notice.js/site-contact.js; tests enforce parity.
 export const permissionSnapshot = {
   "notice": {
-    "version": 3,
+    "version": 4,
     "title": "Permission for your family's Fairy Vault",
     "sections": [
       [
@@ -27,7 +27,7 @@ export const permissionSnapshot = {
       ],
       [
         "How email permission works",
-        "First verify your parent account email. During setup, read this notice and explicitly confirm that you are the parent or legal guardian and give permission for the described collection and use. We submit the full notice to your verified email before recording your approval. Once your approval is recorded, you can finish setup and open child mode. We send a separate confirmation after a delay; it requires no reply, code or further approval and explains how to withdraw permission. If confirmation cannot be submitted within seven days, child access pauses until the issue is resolved. Email permission links expire after seven days. If you decline or do not approve, child mode stays unavailable; you can still review existing records, get help or delete your account. No printed form, signature, payment or government ID is requested."
+        "First verify your parent account email. During setup, review this notice and confirm that you are the parent or legal guardian to request a permission email. Requesting the email does not grant child access. Open the unique link sent to your verified email, sign in to the same parent account, review the notice and explicitly select I give permission there. Only after that approval is recorded can you finish setup and open child mode. We send a separate confirmation after a delay; it includes the original notice and instructions to withdraw permission, with no reply or further approval required. If confirmation cannot be submitted within seven days, child access pauses until the issue is resolved. Email permission links expire after seven days. If you decline or do not approve, child mode stays unavailable; you can still review existing records, get help or delete your account. No printed form, signature, payment or government ID is requested."
       ]
     ]
   },
