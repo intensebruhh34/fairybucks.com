@@ -52,6 +52,14 @@ const checkEmailHandler=async function checkEmailHandler(source,notice,contact){
  r=await s.handler(s.request({action:'request',guardian:true}));expect(r.status===503&&s.mails.length===0,'Wrong account scope entered rehearsal');
  s=setup({scope:true,kind:'notice',env:{PARENT_EMAIL_PERMISSION_ENABLED:'false',PARENT_PERMISSION_REHEARSAL_ENABLED:'true'}});
  r=await s.handler(s.request({action:'request',guardian:true}));expect((await r.json()).status==='requested'&&s.mails.length===1,'Selected rehearsal account could not request notice');
+ s=setup();r=await s.handler(s.request({action:'status'},{Origin:'https://fairybucks-com.netlify.app'}));
+ expect(r.status===200,'Exact Netlify preview origin cannot check existing permission');
+ expect(r.headers['Access-Control-Allow-Origin']==='https://fairybucks-com.netlify.app','Netlify preview CORS response incorrect');
+ expect(s.mails.length===0,'Checking preview permission sent email');
+ s=setup();r=await s.handler(s.request({action:'status'},{Origin:'https://fairybucks.com'}));
+ expect(r.status===200&&r.headers['Access-Control-Allow-Origin']==='https://fairybucks.com','Production origin changed');
+ s=setup();r=await s.handler(s.request({action:'status'},{Origin:'https://unauthorized-preview.netlify.app'}));
+ expect(r.status===403&&s.calls.length===0,'Unapproved Netlify preview origin accepted');
  s=setup();r=await s.handler(s.request({action:'request'},{Origin:'https://attacker.test'}));
  expect(r.status===403&&s.calls.length===0,'Foreign origin accepted');
  r=await s.handler(s.request({action:'request'},{Authorization:''}));
