@@ -78,8 +78,8 @@ const checkEmailHandler=async function checkEmailHandler(source,notice,contact){
  expect(r.status===400&&s.mails.length===0,'Unchecked inline approval accepted');
  s=setup({kind:'notice',rpc:(p,result)=>p.p_action==='status'?result('needed'):null});
  r=await s.handler(s.request({action:'give_permission',expectedParent:uuid,guardian:true}));
- expect((await r.json()).status==='confirming'&&s.mails.length===1,'Inline choice did not deliver notice before approval');
- expect(s.calls.findIndex(c=>c.url==='https://api.resend.com/emails')<s.calls.findIndex(c=>c.url.includes('/rpc/')&&JSON.parse(c.init.body).p_action==='approve'),'Approved before submitting notice');
+ expect((await r.json()).status==='requested'&&s.mails.length===1,'Email request should not count as approval');
+ expect(!s.calls.some(c=>c.url.includes('/rpc/')&&JSON.parse(c.init.body).p_action==='approve'),'Portal choice approved without email-link interaction');
  s=setup({mailFail:true,rpc:(p,result)=>p.p_action==='status'?result('needed'):null});
  r=await s.handler(s.request({action:'give_permission',expectedParent:uuid,guardian:true}));
  expect((await r.json()).status==='email_retry'&&!s.calls.some(c=>c.url.includes('/rpc/')&&JSON.parse(c.init.body).p_action==='approve'),'Failed notice allowed approval');

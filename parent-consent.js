@@ -26,7 +26,7 @@ export function parentConsent(getClient,onPermission){
   const ready=(siteContact.privacyNoticeReviewed||view.rehearsal)&&match;
   const verified=ready&&(d.status==='verified'||d.permission_allowed===true);
   $('consent-status').textContent=!ready?'Email permission is still being prepared. Existing parent records and account deletion remain available.':{
-   needed:'Read the notice, then give permission to continue. We send the full notice to your verified email before recording approval.',
+   needed:'Read the notice and request a permission email. Approval happens only after you open its link and confirm there.',
    requested:'Check your parent email. Open the permission link, sign in if asked, and give permission. You can request another email after five minutes.',
    confirming:d.permission_allowed?'Parent permission is recorded. A confirmation email will follow; no further approval is needed.':'Your approval was received. Confirmation is pending.',
    email_retry:'The email could not be confirmed. Try the email request again, or refresh if you already approved.',

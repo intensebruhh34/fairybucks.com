@@ -33,7 +33,10 @@ export function parentSetup(getClient,onDone){
   if(error||data?.parent_id!==view.user.id||data.version!==parentNotice.version||data.notice_hash!==view.hash)
    throw Error('We couldn’t confirm parent permission. Try again. You can still review existing records in the Parent Portal.');
   if(data.status==='verified'||data.permission_allowed===true)return true;
-  if(action==='give_permission')throw Error(data.status==='rate_limited'?'Please wait before trying again. Permission emails are limited to one per five minutes and six per day.':'Permission was not recorded. Check your connection and try again.');
+  if(action==='give_permission'){
+   if(data.status==='requested'){view.awaitingEmail=true;return false;}
+   throw Error(data.status==='rate_limited'?'Please wait before trying again. Permission emails are limited to one per five minutes and six per day.':'We couldn’t send your permission email. Check your connection and try again.');
+  }
   return false;
  }
  async function next(view){
@@ -91,7 +94,7 @@ export function parentSetup(getClient,onDone){
  }
  $('setup-permission').addEventListener('submit',event=>{
   event.preventDefault();if(!$('setup-guardian').checked)return;
-  return run(async view=>{view.allowed=await permission(view,'give_permission');if(view===active)await next(view);});
+  return run(async view=>{view.allowed=await permission(view,'give_permission');if(view===active){await next(view);if(view.awaitingEmail){$('setup-status').textContent='Check your verified parent email, open the permission link, and approve there. Then return here and use Try again to continue.';view.awaitingEmail=false;}}});
  });
  $('setup-preview-continue').addEventListener('click',()=>run(next));
  $('setup-pin').addEventListener('submit',event=>{
