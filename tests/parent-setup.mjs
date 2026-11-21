@@ -4,7 +4,7 @@ const html=readFileSync(new URL('../auth.html',import.meta.url),'utf8');
 for(const [,id] of source.matchAll(/\$\('([^']+)'\)/g))assert.ok(html.includes('id="'+id+'"'),'Missing DOM element '+id);
 assert.match(html,/Help your child practice saving and budgeting—with a little Tooth Fairy magic/);
 assert.match(html,/id="setup-guardian" type="checkbox" required/);assert.doesNotMatch(html,/id="setup-guardian"[^>]*\bchecked/);
-assert.match(html,/Email my permission link/);assert.match(html,/Explore the Family Vault/);
+assert.match(html,/Email my permission link/);assert.match(html,/I approved — Continue setup/);assert.match(html,/no permission needed/);assert.match(html,/Explore the Family Vault/);
 function fixture(options={}){
  const elements=new Map(),nodes=[];
  const make=()=>{const n={hidden:true,checked:false,disabled:false,value:'',valueAsNumber:5,textContent:'',events:{},children:[],
@@ -34,9 +34,13 @@ function fixture(options={}){
 }
 let s=fixture();await s.flow.open({id:'owner',email:'parent@example.test'});
 assert.equal(s.$('setup-permission-step').hidden,false);assert.equal(s.$('setup-guardian').checked,false);
-await s.submit('setup-permission');assert.equal(s.state.allowed,false);
+await s.submit('setup-permission');assert.equal(s.state.allowed,false);assert.equal(s.$('setup-check-permission').hidden,true);
 s.$('setup-guardian').checked=true;await s.submit('setup-permission');assert.equal(s.state.sentEmail,true);assert.equal(s.state.allowed,false);assert.equal(s.$('setup-permission-step').hidden,false);
-s.state.allowed=true;await s.$('setup-retry').events.click();assert.equal(s.$('setup-pin-step').hidden,false);
+assert.equal(s.$('setup-check-permission').hidden,false,'Parent should see how to continue after receiving the email');
+await s.$('setup-check-permission').events.click();assert.equal(s.$('setup-permission-step').hidden,false,'Unapproved parent must remain in consent setup');
+assert.match(s.$('setup-status').textContent,/Approval is not recorded yet/);
+s.state.allowed=true;await s.$('setup-check-permission').events.click();assert.equal(s.$('setup-pin-step').hidden,false);
+assert.equal(s.$('setup-check-permission').hidden,true);
 s.$('setup-pin-new').value='493027';s.$('setup-pin-confirm').value='493028';await s.submit('setup-pin');assert.equal(s.state.pin,false);
 s.$('setup-pin-confirm').value='493027';await s.submit('setup-pin');assert.equal(s.$('setup-explorer-step').hidden,false);
 s.$('setup-nickname').value='Explorer';s.$('setup-gender').value='rather-not-say';s.$('setup-reward').valueAsNumber=7;
@@ -46,6 +50,7 @@ await s.flow.open({id:'owner'});assert.deepEqual(s.state.done,['owner','owner'])
 s=fixture();s.state.allowed=true;s.state.pin=true;s.state.failSave=true;await s.flow.open({id:'owner'});
 s.$('setup-explorer-pin').value='493027';s.$('setup-nickname').value='Explorer';s.$('setup-gender').value='rather-not-say';await s.submit('setup-explorer');
 assert.equal(s.state.saved,1);await s.$('setup-retry').events.click();assert.equal(s.$('setup-finish-step').hidden,false);assert.equal(s.state.saved,1);
+s=fixture();await s.flow.open({id:'owner'});await s.$('setup-parent-only').events.click();assert.deepEqual(s.state.done,['owner'],'Existing records remain accessible without approval');
 s=fixture();s.state.owner='other';await s.flow.open({id:'owner'});assert.equal(s.state.allowed,false);assert.equal(s.$('setup-retry').hidden,false);
 s=fixture();let resolve;s.client.auth.getUser=()=>new Promise(r=>resolve=r);const pending=s.flow.open({id:'owner'});s.flow.clear();resolve({data:{user:{id:'owner',email_confirmed_at:'today'}}});await pending;
 assert.equal(s.$('parent-setup').hidden,true);assert.equal(s.state.calls.length,0);
