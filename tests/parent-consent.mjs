@@ -59,3 +59,14 @@ const checkPermissionUI=async function checkPermissionUI(source,notice,contact){
  return 'PASS permission UI: staged preview, guardian choice, request/confirmation separation, withdrawal, account binding, failures and late replies';
 };
 console.log(await checkPermissionUI(readFileSync(new URL('parent-consent.js',root),'utf8'),parentNotice,siteContact));
+
+const page=readFileSync(new URL('auth.html',root),'utf8');
+const privacy=readFileSync(new URL('privacy.html',root),'utf8');
+assert.equal(parentNotice.version,4,'Notice upgrade must increment version');
+assert.match(parentNotice.sections.at(-1)[1],/Requesting the email does not grant child access/);
+assert.match(parentNotice.sections.at(-1)[1],/unique link sent to your verified email/);
+assert.match(page,/id="consent-child-access-note"/);
+assert.match(page,/Required for child access:/);
+assert.match(page,/#consent-request-form\{margin-bottom:18px\}/);
+assert.match(page,/#consent-refresh\{display:block;min-height:44px;margin:12px 0 20px\}/);
+assert.match(privacy,/checkbox does not grant child access/);
