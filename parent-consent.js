@@ -28,7 +28,7 @@ export function parentConsent(getClient,onPermission){
   $('consent-status').textContent=!ready?'Email permission is still being prepared. Existing parent records and account deletion remain available.':{
    needed:'Read the notice, then request your permission email.',
    requested:'Check your parent email. Open the permission link, sign in if asked, and give permission. You can request another email after five minutes.',
-   confirming:'Your approval was received. Select Refresh permission status to finish sending the confirmation.',
+   confirming:'Your approval was received. We will automatically send a confirmation after at least one hour. Child mode stays unavailable until it is sent. You can leave this page and check back later.',
    email_retry:'The email could not be confirmed. Try the email request again, or refresh if you already approved.',
    rate_limited:'Please wait before requesting another email. Requests are limited to six per day and one per five minutes.',
    verified:'Parent permission is recorded. You may add explorers and open child mode. A separate confirmation email has been submitted for delivery.',

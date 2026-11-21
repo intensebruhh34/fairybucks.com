@@ -63,6 +63,7 @@ begin
   raise exception 'Unchecked approval accepted';end if;
  x:=public.fairybucks_email_permission('approve',a,sa,v,h,p_request=>rid,p_token_hash=>repeat('a',64),p_guardian=>true);
  if x->>'status'<>'confirming' or private.fairybucks_child_permission(a) then raise exception 'Approval bypassed confirmation';end if;
+ update private.fairybucks_email_permission_requests set approved_at=clock_timestamp()-interval '61 minutes' where id=rid;
  x:=public.fairybucks_email_permission('claim_confirmation',a,sa,v,h,p_request=>rid,p_lease=>confirm_lease);
  confirm_job:=(x->>'job_id')::uuid;
  if x->>'status'<>'mail_claimed' then raise exception 'Confirmation job absent';end if;

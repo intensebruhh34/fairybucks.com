@@ -155,7 +155,7 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
     result=await rpc('start',{p_guardian:body.guardian===true});
    }else result=await rpc(body.action);
    if(body.action==='request'&&result.status==='requested')result=await attemptMail(result,'notice');
-   if(['approve','status'].includes(body.action)&&result.status==='confirming')result=await attemptMail(result,'confirmation');
+   // Confirmation is dispatched by the delayed background worker, never by page refresh.
    return reply(publicResult(result));
   }catch{
    // Do not log request bodies, parent details, link tokens, credentials or provider responses.
