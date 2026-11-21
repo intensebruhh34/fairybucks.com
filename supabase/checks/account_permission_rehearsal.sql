@@ -25,7 +25,7 @@ begin
   raise exception 'Unreviewed email method allowed';end if;
  insert into private.fairybucks_permission_rehearsals(parent_id,expires_at) values(a,clock_timestamp()+interval '1 hour');
  if public.fairybucks_email_permission('start',b,sb,v,h,p_guardian=>true)->>'status' is distinct from 'setup_pending' then raise exception 'Other account entered rehearsal';end if;
- if not private.fairybucks_child_permission(b) then raise exception 'Other account lost development access';end if;
+ if private.fairybucks_child_permission(b) then raise exception 'Non-rehearsal account retained development access';end if;
  perform set_config('request.jwt.claims',jsonb_build_object('sub',a,'session_id',sa)::text,true);perform set_config('role','authenticated',true);
  if public.fairybucks_permission_rehearsal()->>'enabled' is distinct from 'true' then raise exception 'Tester scope missing';end if;
  begin perform 1 from private.fairybucks_permission_rehearsals;raise exception 'Tester read private selection';exception when insufficient_privilege then null;end;
