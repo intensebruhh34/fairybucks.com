@@ -4,6 +4,13 @@ on:
     paths:
       - '**.js'
       - 'auth.html'
+      - 'index.html'
+      - 'child.html'
+      - 'support.html'
+      - 'netlify.toml'
+      - 'tools/build-public-site.mjs'
+      - 'assets/**'
+      - 'printables/**'
       - 'permission.html'
       - 'privacy.html'
       - 'tests/**'
