@@ -49,6 +49,9 @@ export function noticeText(snapshot=permissionSnapshot) {
   'Notice version: '+notice.version
  ].join('\n');
 }
+export function confirmationText() {
+ return "Your parental permission has been successfully recorded!\n\nYour family is one step closer to enjoying the magic of Fairy Bucks.\n\nNo further action is required.\n\nYou can review or withdraw your permission anytime through the Fairy Bucks Parent Portal:\nhttps://fairybucks.com/auth.html\n\nFairy Bucks | ITS Security\nP.O. Box 240\nWest Warren, MA 01092\nPhone: (774) 922-5011\nSupport: support@fairybucks.com\nPrivacy Policy: https://fairybucks.com/privacy.html\n\nIf you did not authorize this permission, please contact support or withdraw permission through your Parent Portal.";
+}
 export function createConfirmationHandler({env,fetch:send,crypto:secure}) {
  return async request=>{
   const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
@@ -88,7 +91,7 @@ export function createConfirmationHandler({env,fetch:send,crypto:secure}) {
      const response=await send('https://api.resend.com/emails',{
       method:'POST',headers:{Authorization:'Bearer '+resend,'Content-Type':'application/json','Idempotency-Key':'fairybucks-permission-'+job.job_id},
       body:JSON.stringify({from:'Fairy Bucks <no-reply@fairybucks.com>',to:[job.email],reply_to:permissionSnapshot.contact.supportEmail,
-       subject:'Fairy Bucks permission confirmation',text:'Your parent permission is confirmed. No further action is needed.\n\nYou can review or withdraw your permission through the Parent Portal at any time.\n\n'+noticeText()+'\n\nYou can revoke this permission at any time. Sign in at https://fairybucks.com/auth.html and select Withdraw parent permission. This ends child sessions and pauses new explorer profiles. If you did not approve, withdraw permission or contact '+permissionSnapshot.contact.supportEmail+'. Never send a password or Parent PIN.'})
+       subject:'Fairy Bucks permission confirmation',text:confirmationText()})
      });
      if(!response.ok)throw Error('Provider failed');const accepted=await response.json();
      if(typeof accepted.id!=='string'||!accepted.id)throw Error('Provider ID missing');
