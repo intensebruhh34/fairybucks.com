@@ -78,12 +78,10 @@ export function parentSetup(getClient,onDone){
    }
    if(!siteContact.parentPermissionEnabled&&!rehearsal){
     // Existing development access is not consent. Never fake a successful approval.
-    view.preview=true;view.allowed=true;
-    const d=await rpc(view);if(!d)return;
-    if(d.completed&&d.explorers>0){onDone(user);return;}
+    view.preview=true;view.allowed=false;
     $('setup-preview').hidden=false;$('setup-give-permission').hidden=true;
-    $('setup-guardian-label').hidden=true;$('setup-preview-continue').hidden=false;
-    $('setup-status').textContent='Setup preview only. Parent permission has not been activated and no consent is recorded.';
+    $('setup-guardian-label').hidden=true;$('setup-preview-continue').hidden=true;
+    $('setup-status').textContent='New explorer setup is paused until parent permission is available. You can still sign in and review existing family records.';
     return;
    }
    $('setup-preview').hidden=true;$('setup-give-permission').hidden=false;
