@@ -30,8 +30,8 @@ console.log('Built audited public site with '+allowed.length+' files in dist/');
 const inlineHashes=new Set();
 for(const page of pages){
  const html=readFileSync(join(out,page),'utf8');
- for(const match of html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi)){
-  if(/\\bsrc\\s*=/.test(match[1]) || !match[2].trim())continue;
+ for(const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)){
+  if(/\bsrc\s*=/.test(match[1]) || !match[2].trim())continue;
   const hash=createHash('sha256').update(match[2],'utf8').digest('base64');
   inlineHashes.add("'sha256-"+hash+"'");
  }
@@ -48,5 +48,5 @@ const policy=[
  "font-src 'self' data:",
  "connect-src 'self' https://cuyrujodyxpxzkdwxstk.supabase.co wss://cuyrujodyxpxzkdwxstk.supabase.co"
 ].join('; ');
-writeFileSync(join(out,'_headers'),'/*\\n  Content-Security-Policy-Report-Only: '+policy+'\\n');
+writeFileSync(join(out,'_headers'),'/*\n  Content-Security-Policy-Report-Only: '+policy+'\n');
 console.log('Staged CSP report-only with '+inlineHashes.size+' inline script hashes');
