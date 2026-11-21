@@ -4,7 +4,7 @@ const html=readFileSync(new URL('../auth.html',import.meta.url),'utf8');
 for(const [,id] of source.matchAll(/\$\('([^']+)'\)/g))assert.ok(html.includes('id="'+id+'"'),'Missing DOM element '+id);
 assert.match(html,/Help your child practice saving and budgeting—with a little Tooth Fairy magic/);
 assert.match(html,/id="setup-guardian" type="checkbox" required/);assert.doesNotMatch(html,/id="setup-guardian"[^>]*\bchecked/);
-assert.match(html,/Give permission and continue/);assert.match(html,/Explore the Family Vault/);
+assert.match(html,/Email my permission link/);assert.match(html,/Explore the Family Vault/);
 function fixture(options={}){
  const elements=new Map(),nodes=[];
  const make=()=>{const n={hidden:true,checked:false,disabled:false,value:'',valueAsNumber:5,textContent:'',events:{},children:[],
