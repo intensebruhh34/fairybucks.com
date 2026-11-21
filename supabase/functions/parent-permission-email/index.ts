@@ -2,7 +2,7 @@
 // Keep this snapshot identical to parent-notice.js/site-contact.js; tests enforce parity.
 export const permissionSnapshot = {
   "notice": {
-    "version": 2,
+    "version": 3,
     "title": "Permission for your family's Fairy Vault",
     "sections": [
       [
@@ -27,7 +27,7 @@ export const permissionSnapshot = {
       ],
       [
         "How email permission works",
-        "After confirming your parent account email, request a permission email. Read the notice in that email, open its secure link, sign in to the same parent account if needed, and affirm that you are the parent or legal guardian and consent to the described collection and use. We send a separate confirmation explaining how to withdraw permission. Child mode and new explorer profiles are enabled only after that confirmation is accepted for delivery. Links expire after seven days. If you decline or do not approve, child mode stays unavailable; you can still review existing records, get help or delete your account. No printed form, signature, payment or government ID is requested."
+        "First verify your parent account email. During setup, read this notice and explicitly confirm that you are the parent or legal guardian and give permission for the described collection and use. We submit the full notice to your verified email before recording your approval. Once your approval is recorded, you can finish setup and open child mode. We send a separate confirmation after a delay; it requires no reply, code or further approval and explains how to withdraw permission. If confirmation cannot be submitted within seven days, child access pauses until the issue is resolved. Email permission links expire after seven days. If you decline or do not approve, child mode stays unavailable; you can still review existing records, get help or delete your account. No printed form, signature, payment or government ID is requested."
       ]
     ]
   },
@@ -81,7 +81,7 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
    const raw=await request.text();
    if(raw.length>4096)return reply({status:'invalid_request'},400);
    let body;try{body=JSON.parse(raw);}catch{return reply({status:'invalid_request'},400);}
-   if(!body||!['status','request','inspect','approve','withdraw'].includes(body.action))
+   if(!body||!['status','request','give_permission','inspect','approve','withdraw'].includes(body.action))
     return reply({status:'invalid_request'},400);
    const auth=request.headers.get('Authorization')||'';
    if(!/^Bearer [A-Za-z0-9._-]+$/.test(auth))return reply({status:'sign_in_required'},401);
@@ -116,7 +116,7 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
     return data;
    };
    const publicResult=data=>({
-    status:data.status,parent_id:user.id,version:data.version,notice_hash:data.notice_hash
+    status:data.status,parent_id:user.id,version:data.version,notice_hash:data.notice_hash,permission_allowed:data.permission_allowed===true
    });
    // Stable job keys make a lost Resend acknowledgement safe to retry.
    const attemptMail=async(data,kind)=>{
@@ -132,7 +132,7 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
     const link=origin+'/permission.html#request='+id+'&token='+token;
     const text=kind==='notice'
      ?noticeText()+'\n\nTo give permission, open this link, sign in to this same parent account if asked, read the notice and select I give permission. Opening the link alone does not approve anything.\n'+link+'\n\nThis link expires seven days after the request. If you do not want to give permission, ignore it. You can review existing records or delete your parent account in the Parent Portal.'
-     :'You gave permission for your family to use Fairy Bucks under notice version '+version+'.\n\n'+noticeText()+'\n\nYou can revoke this permission at any time. Sign in at https://fairybucks.com/auth.html and select Withdraw parent permission. This ends child sessions and pauses new explorer profiles. You can still review or delete existing family records. If you did not approve, withdraw permission or contact '+permissionSnapshot.contact.supportEmail+'. Never send a password or Parent PIN.';
+     :'Your parent permission is confirmed. No further action is needed.\n\nYou can review or withdraw your permission through the Parent Portal at any time.\n\n'+noticeText()+'\n\nYou can revoke this permission at any time. Sign in at https://fairybucks.com/auth.html and select Withdraw parent permission. This ends child sessions and pauses new explorer profiles. You can still review or delete existing family records. If you did not approve, withdraw permission or contact '+permissionSnapshot.contact.supportEmail+'. Never send a password or Parent PIN.';
     const response=await send('https://api.resend.com/emails',{
      method:'POST',headers:{Authorization:'Bearer '+env('RESEND_API_KEY'),'Content-Type':'application/json',
       'Idempotency-Key':'fairybucks-permission-'+job.job_id},
@@ -147,6 +147,23 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
     return rpc('accepted',{p_request:id,p_job:job.job_id,p_lease:lease,p_message_id:accepted.id});
    };
    let result;
+   if(body.action==='give_permission'){
+    if(body.expectedParent!==user.id)return reply({status:'account_changed'},409);
+    if(body.guardian!==true)return reply({status:'guardian_required'},400);
+    result=await rpc('status');
+    if(result.status!=='verified'&&result.permission_allowed!==true){
+     if(!['requested','confirming'].includes(result.status))result=await rpc('start',{p_guardian:true});
+     if(result.status==='requested')result=await attemptMail(result,'notice');
+     // This authenticated choice is bound to the verified parent, active session and
+     // exact emailed notice. Never accept a parent ID, recipient or hash from the browser.
+     if(result.status==='requested'){
+      const id=result.request_id;
+      if(!uuid.test(id||''))throw Error('Permission request unavailable');
+      result=await rpc('approve',{p_request:id,p_token_hash:await hash(await tokenFor(id)),p_guardian:true});
+     }
+    }
+    return reply(publicResult(result));
+   }
    if(body.action==='inspect'||body.action==='approve'){
     if(!uuid.test(body.requestId||'')||!/^[0-9a-f]{64}$/.test(body.token||''))
      return reply({status:'invalid_link'},400);
@@ -155,7 +172,7 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
     result=await rpc('start',{p_guardian:body.guardian===true});
    }else result=await rpc(body.action);
    if(body.action==='request'&&result.status==='requested')result=await attemptMail(result,'notice');
-   if(['approve','status'].includes(body.action)&&result.status==='confirming')result=await attemptMail(result,'confirmation');
+   // Confirmation is durable background work; it never depends on a page refresh.
    return reply(publicResult(result));
   }catch{
    // Do not log request bodies, parent details, link tokens, credentials or provider responses.

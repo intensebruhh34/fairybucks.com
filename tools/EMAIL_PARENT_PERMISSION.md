@@ -1,6 +1,8 @@
 # Email parent permission — staged implementation
 
-**Current checkpoint:** see [the November 20 launch review](../docs/reviews/pilot-launch-2026-11-20.md). Installation and initial rehearsal instructions below describe the implementation history; they are not a request to reinstall or repeat completed tests. The original version-1 activation SQL is retired and must not be used for this flow.
+**Current rollout:** use [Guided parent setup](GUIDED_PARENT_SETUP.md) for notice v3, migrations, deployments and the delayed sender. Instructions below describe version-2 history, not the new rollout.
+
+**Earlier checkpoint:** see [the November 20 launch review](../docs/reviews/pilot-launch-2026-11-20.md). Installation and initial rehearsal instructions below describe the implementation history; they are not a request to reinstall or repeat completed tests. The original version-1 activation SQL is retired and must not be used for this flow.
 
 This replaces the signed-form process. It is not a legal-compliance certification. Email-plus eligibility depends on the actual service and provider practices. The implementation sends a distinct confirmation after explicit consent; it does not treat account verification as consent.
 
@@ -12,7 +14,7 @@ This replaces the signed-form process. It is not a legal-compliance certificatio
 - The authenticated portal shows a static preview; it does not request/approve consent or send email.
 - No live Supabase changes or email deliveries were performed while preparing this PR.
 
-## Install and test — not activation
+## Historical version-2 installation — do not repeat for the guided setup upgrade
 
 1. In Supabase SQL Editor, run supabase/migrations/20261117010000_email_parent_consent.sql once, after the existing parent-consent foundation. This does not enable gates or email.
 2. Run supabase/checks/email_parent_consent.sql. It uses new random example.test fixtures, sends no email and rolls back every change. Expect PASS. Keep the full result private if any unrelated account information is visible.

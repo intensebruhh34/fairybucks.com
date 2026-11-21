@@ -9,6 +9,7 @@ declare
 begin
  insert into auth.users(id,email,email_confirmed_at) values(a,a::text||'@example.test',now()),(b,b::text||'@example.test',now());
  insert into auth.sessions(id,user_id) values(sa,a),(sb,b);
+ update private.fairybucks_privacy_release set notice_version=2;
  select notice_version,notice_hash into v,h from private.fairybucks_privacy_release;
  select id into fa from public.families where owner_id=a limit 1;
  if fa is null then fa:=gen_random_uuid();insert into public.families(id,owner_id) values(fa,a);end if;
@@ -18,7 +19,7 @@ begin
  values(ca,extensions.digest(pending_token,'sha256'),clock_timestamp()+interval '1 hour');
  grant insert on public.child_profiles to authenticated;
 
- update private.fairybucks_privacy_release set notice_ready=true,enforcement_enabled=true,email_method_reviewed=false;
+ update private.fairybucks_privacy_release set notice_version=2,notice_ready=true,enforcement_enabled=true,email_method_reviewed=false;
  if public.fairybucks_email_permission('start',a,sa,v,h,p_guardian=>true)->>'status'<>'setup_pending' then
   raise exception 'Unreviewed email method allowed';end if;
  update private.fairybucks_privacy_release set email_method_reviewed=true;
@@ -63,6 +64,7 @@ begin
   raise exception 'Unchecked approval accepted';end if;
  x:=public.fairybucks_email_permission('approve',a,sa,v,h,p_request=>rid,p_token_hash=>repeat('a',64),p_guardian=>true);
  if x->>'status'<>'confirming' or private.fairybucks_child_permission(a) then raise exception 'Approval bypassed confirmation';end if;
+ update private.fairybucks_email_permission_requests set approved_at=clock_timestamp()-interval '61 minutes' where id=rid;
  x:=public.fairybucks_email_permission('claim_confirmation',a,sa,v,h,p_request=>rid,p_lease=>confirm_lease);
  confirm_job:=(x->>'job_id')::uuid;
  if x->>'status'<>'mail_claimed' then raise exception 'Confirmation job absent';end if;

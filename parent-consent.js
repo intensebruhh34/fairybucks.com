@@ -24,14 +24,14 @@ export function parentConsent(getClient,onPermission){
   const d=view.data;
   const match=d.version===parentNotice.version&&d.notice_hash===view.hash;
   const ready=(siteContact.privacyNoticeReviewed||view.rehearsal)&&match;
-  const verified=ready&&d.status==='verified';
+  const verified=ready&&(d.status==='verified'||d.permission_allowed===true);
   $('consent-status').textContent=!ready?'Email permission is still being prepared. Existing parent records and account deletion remain available.':{
-   needed:'Read the notice, then request your permission email.',
+   needed:'Read the notice, then give permission to continue. We send the full notice to your verified email before recording approval.',
    requested:'Check your parent email. Open the permission link, sign in if asked, and give permission. You can request another email after five minutes.',
-   confirming:'Your approval was received. Select Refresh permission status to finish sending the confirmation.',
+   confirming:d.permission_allowed?'Parent permission is recorded. A confirmation email will follow; no further approval is needed.':'Your approval was received. Confirmation is pending.',
    email_retry:'The email could not be confirmed. Try the email request again, or refresh if you already approved.',
    rate_limited:'Please wait before requesting another email. Requests are limited to six per day and one per five minutes.',
-   verified:'Parent permission is recorded. You may add explorers and open child mode. A separate confirmation email has been submitted for delivery.',
+   verified:'Parent permission is recorded. You may add explorers and open child mode. You can review or withdraw permission here at any time.',
    withdrawn:'Permission withdrawn. Child sessions have ended. Existing records remain available for review or deletion.'
   }[d.status]||'Permission is unavailable. Refresh or contact support.';
   $('consent-request-form').hidden=!ready||!['needed','requested','withdrawn','email_retry','rate_limited'].includes(d.status);
@@ -47,7 +47,7 @@ export function parentConsent(getClient,onPermission){
   for(const id of ['consent-request','consent-refresh','consent-withdraw'])$(id).disabled=true;
   try{
    const {data,error}=await getClient().functions.invoke('parent-permission-email',{
-    body:{action,guardian:action==='request'&&$('consent-guardian').checked}
+    body:{action,expectedParent:view.ownerId,guardian:['request','give_permission'].includes(action)&&$('consent-guardian').checked}
    });
    if(view!==active)return;
    if(error||!data||data.parent_id!==view.ownerId||!['needed','requested','confirming','email_retry','rate_limited','verified','withdrawn','setup_pending'].includes(data.status))
@@ -84,7 +84,7 @@ export function parentConsent(getClient,onPermission){
   }catch{if(view===active){$('consent-status').textContent='Sign in again to review parent permission.';onPermission(false);}}
  }
  $('consent-request-form').addEventListener('submit',event=>{
-  event.preventDefault();if(active&&!active.staged&&!active.busy&&$('consent-guardian').checked)return load(active,'request');
+  event.preventDefault();if(active&&!active.staged&&!active.busy&&$('consent-guardian').checked)return load(active,'give_permission');
  });
  $('consent-refresh').addEventListener('click',()=>{if(active?.hash&&!active.staged)return load(active);});
  $('consent-withdraw').addEventListener('click',()=>{

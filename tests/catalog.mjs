@@ -26,7 +26,7 @@ insert into auth.sessions values(gen_random_uuid(),'44a684ee-6e65-4098-80d7-3a21
 insert into families(owner_id) select id from auth.users;
 update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`);
 const legacyExplorerCheck=process.argv.includes('--explorer-without-consent');
-const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')&&!f.includes('retention_periods')));
+const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')&&!f.includes('retention_periods')&&!f.includes('delayed_permission_confirmation')&&!f.includes('guided_parent_setup')));
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
 if(legacyExplorerCheck){
  await db.exec(readFileSync(root+'/supabase/checks/child_mode_readiness.sql','utf8'));
@@ -80,6 +80,10 @@ await db.exec(readFileSync(root+'/supabase/checks/email_parent_consent.sql','utf
 console.log('PASS email permission state, service-only transitions, confirmation, expiry, withdrawal and deletion');
 await db.exec(readFileSync(root+'/supabase/checks/account_permission_rehearsal.sql','utf8'));
 console.log('PASS private account rehearsal: isolation, expiry, email approval and child gates');
+await db.exec(readFileSync(root+'/supabase/checks/delayed_permission_confirmation.sql','utf8'));
+console.log('PASS durable delayed mail dispatch and withdrawal safety');
+await db.exec(readFileSync(root+'/supabase/checks/guided_parent_setup.sql','utf8'));
+console.log('PASS guided setup, approval before follow-up, PIN, atomic explorer/reward and isolation');
 // Verify the migration leaves legacy request prices and balances intact.
 await db.exec(`insert into child_profiles(id,family_id,nickname) select '11111111-1111-4111-8111-111111111111',id,'Legacy' from families limit 1;
 insert into fairy_wallets values('11111111-1111-4111-8111-111111111111',42,now());
