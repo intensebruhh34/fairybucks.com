@@ -10,6 +10,7 @@
 | Squarespace forwarding and Google/Gmail | Routes and stores support email | Parents could supply child information in support cases | Forwarding and inbox terms/security assurance, support retention and deletion procedure |
 
 ## Operator decisions before real families
+- [ ] **Hosting terms for commercial use:** GitHub Pages documents restrictions on free hosting for sites primarily operating an online business, e-commerce or SaaS. Before a monetized Fairybucks launch, verify written eligibility or migrate the static site to a host whose plan explicitly permits commercial operation. A custom domain does not by itself establish an exception. Reference: https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits
 - [ ] Confirm all third-party scripts, subresources and network requests on child-facing pages, including redirects/CDNs.
 - [ ] Record written security assurances and acceptable terms for every relevant provider.
 - [ ] Determine whether processing is solely for support of internal operations and whether any separate parental consent would be required.
