@@ -26,7 +26,15 @@ insert into auth.sessions values(gen_random_uuid(),'44a684ee-6e65-4098-80d7-3a21
 insert into families(owner_id) select id from auth.users;
 update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`);
 const legacyExplorerCheck=process.argv.includes('--explorer-without-consent');
-const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')&&!f.includes('retention_periods')&&!f.includes('delayed_permission_confirmation')&&!f.includes('guided_parent_setup')));
+const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')&&!f.includes('retention_periods')&&!f.includes('delayed_permission_confirmation')&&!f.includes('guided_parent_setup')&&!f.includes('five_minute_permission_confirmation')));
+if(!legacyExplorerCheck)await db.exec(`
+create schema vault;create schema net;create schema cron;
+create table vault.decrypted_secrets(id uuid primary key,decrypted_secret text);
+create function vault.create_secret(value text,name text,description text) returns uuid language plpgsql as $$declare id uuid:=gen_random_uuid();begin insert into vault.decrypted_secrets values(id,value);return id;end $$;
+create table cron.job(jobid bigint primary key,jobname text);create table cron.job_run_details(jobid bigint,end_time timestamptz);
+create table net.calls(id bigint generated always as identity, url text,body jsonb);
+create function net.http_post(url text,headers jsonb,body jsonb,timeout_milliseconds integer) returns bigint language plpgsql as $$declare id bigint;begin insert into net.calls(url,body) values(url,body) returning calls.id into id;return id;end $$;
+`);
 for(const f of files){await db.exec(readFileSync(root+'/supabase/migrations/'+f,'utf8'));}
 if(legacyExplorerCheck){
  await db.exec(readFileSync(root+'/supabase/checks/child_mode_readiness.sql','utf8'));
@@ -83,6 +91,8 @@ console.log('PASS private account rehearsal: isolation, expiry, email approval a
 await db.exec(readFileSync(root+'/supabase/checks/delayed_permission_confirmation.sql','utf8'));
 console.log('PASS durable delayed mail dispatch and withdrawal safety');
 await db.exec(readFileSync(root+'/supabase/checks/guided_parent_setup.sql','utf8'));
+await db.exec(readFileSync(root+'/supabase/checks/confirmation_scheduler.sql','utf8'));
+await (await import('./confirmation-scheduler.mjs')).checkScheduler(db);
 console.log('PASS guided setup, approval before follow-up, PIN, atomic explorer/reward and isolation');
 // Verify the migration leaves legacy request prices and balances intact.
 await db.exec(`insert into child_profiles(id,family_id,nickname) select '11111111-1111-4111-8111-111111111111',id,'Legacy' from families limit 1;

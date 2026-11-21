@@ -45,7 +45,7 @@ begin
  begin perform public.fairybucks_parent_setup(p_expected_parent=>b);raise exception 'Wrong expected parent accepted';exception when insufficient_privilege then null;end;
  perform set_config('role','none',true);
  if (select nickname from public.child_profiles where id=child)<>'First explorer' then raise exception 'Retry edited profile';end if;
- update private.fairybucks_email_permission_requests set approved_at=now()-interval '61 minutes' where id=rid;
+ update private.fairybucks_email_permission_requests set approved_at=now()-interval '6 minutes' where id=rid;
  x:=public.fairybucks_confirmation_dispatch('claim',v,h,true,false,rid,p_lease=>lease);job:=(x->>'job_id')::uuid;
  if x->>'status'<>'mail_claimed' then raise exception 'Due follow-up not claimed';end if;
  x:=public.fairybucks_confirmation_dispatch('accepted',v,h,true,false,rid,job,lease,'TEST-CONFIRM');

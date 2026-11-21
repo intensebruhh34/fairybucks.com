@@ -16,7 +16,7 @@ begin
  if public.fairybucks_email_permission('claim_confirmation',a,sid,v,h,p_request=>rid,p_lease=>lease)->>'status'<>'confirming' then raise exception 'Immediate parent send allowed';end if;
  if public.fairybucks_confirmation_dispatch('claim',v,h,true,false,rid,p_lease=>lease)->>'status'<>'no_mail' then raise exception 'Worker sent before delay';end if;
  if private.fairybucks_child_permission(a) then raise exception 'Pending approval opened child access';end if;
- update private.fairybucks_email_permission_requests set approved_at=now()-interval '61 minutes' where id=rid;
+ update private.fairybucks_email_permission_requests set approved_at=now()-interval '6 minutes' where id=rid;
  if public.fairybucks_confirmation_dispatch('claim',v,h,false,false,rid,p_lease=>lease)->>'status'<>'no_mail' then raise exception 'Disabled scope sent';end if;
  x:=public.fairybucks_confirmation_dispatch('list',v,h,true,false);
  if not (x->'requests' @> jsonb_build_array(rid::text)) then raise exception 'Due job missing from scheduler list';end if;

@@ -6,10 +6,12 @@ assert.deepEqual(permissionSnapshot.notice,parent.parentNotice);
 const digest=await webcrypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(permissionSnapshot)));
 const hash=Buffer.from(digest).toString('hex'),id='11111111-1111-4111-8111-111111111111',job='22222222-2222-4222-8222-222222222222';
 function setup(options={}){
- const env={PERMISSION_WORKER_SECRET:'PRIVATE-WORKER-SECRET-32-BYTES-LONG',PARENT_EMAIL_PERMISSION_ENABLED:'true',SUPABASE_URL:'https://example.test',SUPABASE_SERVICE_ROLE_KEY:'PRIVATE-SERVICE',RESEND_API_KEY:'PRIVATE-RESEND',...options.env};
+ const workerKey='a'.repeat(64);
+ const env={PARENT_EMAIL_PERMISSION_ENABLED:'true',SUPABASE_URL:'https://example.test',SUPABASE_SERVICE_ROLE_KEY:'PRIVATE-SERVICE',RESEND_API_KEY:'PRIVATE-RESEND',...options.env};
  const calls=[],mails=[];let accepted=0;
  const fetch=async(url,init)=>{
   calls.push([url,init]);const b=JSON.parse(init.body);
+  if(url.includes('/rpc/fairybucks_check_confirmation_worker'))return new Response(JSON.stringify(!options.authFail&&b.p_secret===workerKey),{status:options.authUnavailable?503:200});
   if(url.includes('/rpc/')){
    let data;
    if(b.p_action==='list')data={requests:[id]};
@@ -20,12 +22,14 @@ function setup(options={}){
   mails.push(init);return new Response(JSON.stringify(options.noId?{}:{id:'provider-id'}),{status:options.mailFail?503:200});
  };
  const handler=createConfirmationHandler({env:n=>env[n],fetch,crypto:webcrypto});
- const request=(key=env.PERMISSION_WORKER_SECRET,origin)=>new Request('https://example.test',{method:'POST',headers:{Authorization:'Bearer '+key,...(origin?{Origin:origin}:{})},body:'{}'});
+ const request=(key=workerKey,origin)=>new Request('https://example.test',{method:'POST',headers:{Authorization:'Bearer '+key,...(origin?{Origin:origin}:{})},body:'{}'});
  return {handler,request,calls,mails,get accepted(){return accepted;}};
 }
 let s=setup(),r=await s.handler(s.request('wrong'));assert.equal(r.status,403);assert.equal(s.calls.length,0);
 r=await s.handler(s.request(undefined,'https://fairybucks.com'));assert.equal(r.status,403);assert.equal(s.calls.length,0);
-s=setup({env:{PARENT_EMAIL_PERMISSION_ENABLED:'false'}});r=await s.handler(s.request());assert.equal(r.status,503);assert.equal(s.calls.length,0);
+s=setup({env:{PARENT_EMAIL_PERMISSION_ENABLED:'false'}});r=await s.handler(s.request());assert.equal(r.status,503);assert.equal(s.calls.length,1);
+s=setup({authFail:true});r=await s.handler(s.request());assert.equal(r.status,403);assert.equal(s.mails.length,0);
+s=setup({authUnavailable:true});r=await s.handler(s.request());assert.equal(r.status,403);assert.equal(s.mails.length,0);
 s=setup({noMail:true});r=await s.handler(s.request());assert.equal(s.mails.length,0);
 s=setup({badHash:true});r=await s.handler(s.request());assert.equal(s.mails.length,0);assert.equal(r.status,503);
 for(const options of [{mailFail:true},{noId:true}]){s=setup(options);r=await s.handler(s.request());assert.equal(r.status,503);assert.equal(s.accepted,0);}
