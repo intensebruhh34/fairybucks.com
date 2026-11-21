@@ -23,10 +23,10 @@ function fixture(options={}){
   if(name==='fairybucks_parent_pin')return {data:{status:'unlocked',token:'unlock'}};
  },functions:{invoke:async(name,{body})=>{
   state.calls.push([name,body]);if(body.action==='give_permission')state.sentEmail=true;
-  return {data:{parent_id:state.owner,status:state.allowed?'verified':state.sentEmail?'requested':'needed',permission_allowed:state.allowed,version:4,notice_hash:'hash'}};
+  return {data:{parent_id:state.owner,status:state.allowed?'verified':state.sentEmail?'requested':'needed',permission_allowed:state.allowed,version:5,notice_hash:'hash'}};
  }}};
  const api=new Function('document','parentNotice','siteContact','parentNoticeHash','storeChildToken','crypto','window','location',source.replace(/^import .+;$/gm,'').replaceAll('export ','')+'\nreturn {parentSetup};')(
-  {getElementById:$,createElement:make},{version:4,sections:[['Notice','Required notice']]},{parentPermissionEnabled:true},async()=>'hash',()=>{},
+  {getElementById:$,createElement:make},{version:5,sections:[['Notice','Required notice']]},{parentPermissionEnabled:true},async()=>'hash',()=>{},
   {randomUUID:()=> 'new-explorer'},{confirm:()=>false},{replace(){}});
  const flow=api.parentSetup(()=>client,user=>state.done.push(user.id));
  const submit=id=>$(id).events.submit({preventDefault(){}});
