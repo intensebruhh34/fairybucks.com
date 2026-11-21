@@ -37,6 +37,7 @@ export function parentConsent(getClient,onPermission){
   $('consent-request-form').hidden=!ready||!['needed','requested','withdrawn','email_retry','rate_limited'].includes(d.status);
   $('consent-withdraw').hidden=!ready||!['requested','confirming','email_retry','rate_limited','verified'].includes(d.status);
   if(view.rehearsal)$('consent-status').textContent='Private test-account rehearsal. '+$('consent-status').textContent;
+  $('consent-child-access-note').hidden=verified;
   onPermission(verified);
  }
  async function load(view,action='status'){
