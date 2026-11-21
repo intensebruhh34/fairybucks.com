@@ -17,9 +17,9 @@ console.log('PASS static public build allowlist and privacy-sensitive file exclu
 // The experimental permission email page remains in source control for private regression tests, not public hosting.
 const headers=readFileSync(join(output,'_headers'),'utf8');
 assert.match(headers,/Content-Security-Policy-Report-Only:/);
-assert.match(headers,/script-src 'self' https:\/\/cdn\\.jsdelivr\\.net/);
-assert.match(headers,/connect-src 'self' https:\/\/cuyrujodyxpxzkdwxstk\\.supabase\\.co/);
-const inline=[...readFileSync(join(output,'auth.html'),'utf8').matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi)].filter(x=>!(/\\bsrc\\s*=/.test(x[1]))&&x[2].trim());
+assert.match(headers,/script-src 'self' https:\/\/cdn\.jsdelivr\.net/);
+assert.match(headers,/connect-src 'self' https:\/\/cuyrujodyxpxzkdwxstk\.supabase\.co/);
+const inline=[...readFileSync(join(output,'auth.html'),'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)].filter(x=>!(/\bsrc\s*=/.test(x[1]))&&x[2].trim());
 assert.ok(inline.length>0,'Parent page needs an inline module under test');
 const {createHash}=await import('node:crypto');
 for(const [, , body] of inline){const digest=createHash('sha256').update(body,'utf8').digest('base64');assert.ok(headers.includes("'sha256-"+digest+"'"),'Generated CSP missing parent module hash');}
