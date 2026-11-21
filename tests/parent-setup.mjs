@@ -35,7 +35,8 @@ function fixture(options={}){
 let s=fixture();await s.flow.open({id:'owner',email:'parent@example.test'});
 assert.equal(s.$('setup-permission-step').hidden,false);assert.equal(s.$('setup-guardian').checked,false);
 await s.submit('setup-permission');assert.equal(s.state.allowed,false);
-s.$('setup-guardian').checked=true;await s.submit('setup-permission');assert.equal(s.state.sentEmail,true);assert.equal(s.state.allowed,false);assert.equal(s.$('setup-permission-step').hidden,false);\ns.state.allowed=true;await s.$('setup-retry').events.click();assert.equal(s.$('setup-pin-step').hidden,false);
+s.$('setup-guardian').checked=true;await s.submit('setup-permission');assert.equal(s.state.sentEmail,true);assert.equal(s.state.allowed,false);assert.equal(s.$('setup-permission-step').hidden,false);
+s.state.allowed=true;await s.$('setup-retry').events.click();assert.equal(s.$('setup-pin-step').hidden,false);
 s.$('setup-pin-new').value='493027';s.$('setup-pin-confirm').value='493028';await s.submit('setup-pin');assert.equal(s.state.pin,false);
 s.$('setup-pin-confirm').value='493027';await s.submit('setup-pin');assert.equal(s.$('setup-explorer-step').hidden,false);
 s.$('setup-nickname').value='Explorer';s.$('setup-gender').value='rather-not-say';s.$('setup-reward').valueAsNumber=7;
