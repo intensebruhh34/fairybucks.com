@@ -50,7 +50,7 @@ export function noticeText(snapshot=permissionSnapshot) {
  ].join('\n');
 }
 export function confirmationText() {
- return "Your parental permission has been successfully recorded!\n\nYour family is one step closer to enjoying the magic of Fairy Bucks.\n\nNo further action is required.\n\nYou can review or withdraw your permission anytime through the Fairy Bucks Parent Portal:\nhttps://fairybucks.com/auth.html\n\nFairy Bucks | ITS Security\nP.O. Box 240\nWest Warren, MA 01092\nPhone: (774) 922-5011\nSupport: support@fairybucks.com\nPrivacy Policy: https://fairybucks.com/privacy.html\n\nIf you did not authorize this permission, please contact support or withdraw permission through your Parent Portal.";
+ return "Your parental permission has been successfully recorded!\n\nYour family is one step closer to enjoying the magic of Fairy Bucks.\n\nNo further action is required.\n\nYou can review or withdraw your permission anytime through the Fairy Bucks Parent Portal:\nhttps://fairybucks.com/auth.html\n\nFairy Bucks | ITS Security\nP.O. Box 240\nWest Warren, MA 01092\nPhone: (774) 922-5011\nSupport: support@fairybucks.com\nPrivacy Policy: https://fairybucks.com/privacy.html\n\nIf you did not authorize this permission, please contact support or withdraw permission through your Parent Portal.\n\nFor your records, the original parent-permission notice is reproduced below:\n\n"+noticeText();
 }
 export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decode}) {
  const origin='https://fairybucks.com';
@@ -134,7 +134,7 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
      throw Error('Mail account/notice mismatch');
     const link=origin+'/permission.html#request='+id+'&token='+token;
     const text=kind==='notice'
-     ?noticeText()+'\n\nIf you already gave permission in the Parent Portal, your approval is recorded and no further action is needed. Otherwise, to approve, open this link, sign in to the same parent account, review the notice and select I give permission. Opening the link alone does not approve anything.\n'+link+'\n\nThe link expires seven days after the request. If you do not want to give permission, ignore it. You can review existing records or delete your parent account in the Parent Portal.'
+     ?noticeText()+'\n\nTo approve, open this link from your email, sign in to the same parent account, review the notice and select I give permission. The permission is not approved in the Parent Portal before this email step. Opening the link alone does not approve anything.\n'+link+'\n\nThe link expires seven days after the request. If you do not want to give permission, ignore it. You can review existing records or delete your parent account in the Parent Portal.'
      :confirmationText();
     const response=await send('https://api.resend.com/emails',{
      method:'POST',headers:{Authorization:'Bearer '+env('RESEND_API_KEY'),'Content-Type':'application/json',
@@ -157,13 +157,8 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
     if(result.status!=='verified'&&result.permission_allowed!==true){
      if(!['requested','confirming'].includes(result.status))result=await rpc('start',{p_guardian:true});
      if(result.status==='requested')result=await attemptMail(result,'notice');
-     // This authenticated choice is bound to the verified parent, active session and
-     // exact emailed notice. Never accept a parent ID, recipient or hash from the browser.
-     if(result.status==='requested'){
-      const id=result.request_id;
-      if(!uuid.test(id||''))throw Error('Permission request unavailable');
-      result=await rpc('approve',{p_request:id,p_token_hash:await hash(await tokenFor(id)),p_guardian:true});
-     }
+     // Consent is not recorded here. The parent must open the unique email link
+     // and affirmatively approve via permission.html after receiving the notice.
     }
     return reply(publicResult(result));
    }
