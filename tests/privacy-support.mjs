@@ -14,7 +14,7 @@ assert.equal(supportPending.hidden,true,'Confirmed inbox must hide support setup
 assert.equal(siteContact.privacyNoticeReviewed,false);
 assert.equal(draft.hidden,false,'Contact details must not imply completed privacy review');
 for(const file of ['auth.html','index.html','child.html'])assert.match(readFileSync(new URL(file,root),'utf8'),/href="\/privacy\.html"/);
-const privacy=readFileSync(new URL('privacy.html',root),'utf8');assert.match(privacy,/Pre-launch privacy review/);assert.match(privacy,/Final review of applicable children's privacy requirements/);assert.match(privacy,/deployed and have passed a controlled delivery test/);assert.doesNotMatch(privacy,/Not configured/);assert.match(privacy,/data-contact-field="phone" hidden/);assert.match(privacy,/Supabase/);assert.match(privacy,/GitHub Pages/);assert.match(privacy,/Resend/);assert.match(privacy,/jsDelivr/);assert.match(privacy,/backup/);
+const privacy=readFileSync(new URL('privacy.html',root),'utf8');assert.match(privacy,/Pre-launch privacy review/);assert.match(privacy,/Final review of applicable children's privacy requirements/);assert.match(privacy,/deployed and have passed a controlled delivery test/);assert.doesNotMatch(privacy,/Not configured/);assert.match(privacy,/data-contact-field="phone" hidden/);assert.match(privacy,/Supabase/);assert.match(privacy,/Netlify/);assert.match(privacy,/Resend/);assert.match(privacy,/jsDelivr/);assert.match(privacy,/backup/);
 assert.doesNotMatch(privacy,/COPPA.compliant|fully compliant|guarantee/i);
 assert.equal(siteContact.operatorName,'ITS Security');
 assert.equal(siteContact.phone,'(774) 922-5011');
