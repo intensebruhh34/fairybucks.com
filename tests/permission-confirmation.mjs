@@ -34,8 +34,8 @@ s=setup({noMail:true});r=await s.handler(s.request());assert.equal(s.mails.lengt
 s=setup({badHash:true});r=await s.handler(s.request());assert.equal(s.mails.length,0);assert.equal(r.status,503);
 for(const options of [{mailFail:true},{noId:true}]){s=setup(options);r=await s.handler(s.request());assert.equal(r.status,503);assert.equal(s.accepted,0);}
 s=setup();r=await s.handler(s.request());assert.equal((await r.json()).sent,1);assert.equal(s.accepted,1);
-const mail=JSON.parse(s.mails[0].body);assert.deepEqual(mail.to,['parent@example.test']);assert.ok(mail.text.includes('revoke this permission'));assert.ok(mail.text.startsWith('Your parent permission is confirmed. No further action is needed.'));assert.ok(mail.text.includes('You can review or withdraw your permission through the Parent Portal at any time.'));for(const [,text]of parent.parentNotice.sections)assert.ok(mail.text.includes(text));
+const mail=JSON.parse(s.mails[0].body);assert.deepEqual(mail.to,['parent@example.test']);assert.ok(mail.text.startsWith('Your parental permission has been successfully recorded!'));assert.ok(mail.text.includes('review or withdraw your permission'));assert.ok(mail.text.includes('https://fairybucks.com/auth.html'));assert.ok(mail.text.includes('support@fairybucks.com'));assert.ok(mail.text.includes('https://fairybucks.com/privacy.html'));assert.ok(mail.text.includes('If you did not authorize this permission'));for(const [,noticeSection] of parent.parentNotice.sections)assert.ok(!mail.text.includes(noticeSection));
 assert.equal(s.mails[0].headers['Idempotency-Key'],'fairybucks-permission-'+job);
 s=setup({withdrawn:true});r=await s.handler(s.request());assert.equal((await r.json()).sent,0);
 assert.ok(!JSON.stringify(await (await s.handler(s.request('wrong'))).json()).includes('PRIVATE-'));
-console.log('PASS delayed sender: secret/staging/origin, exact notice, rejected jobs, provider failures, stable retries and late withdrawal');
+console.log('PASS delayed sender: secret/staging/origin, concise confirmation, rejected jobs, provider failures, stable retries and late withdrawal');
