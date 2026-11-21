@@ -53,7 +53,8 @@ export function confirmationText() {
  return "Your parental permission has been successfully recorded!\n\nYour family is one step closer to enjoying the magic of Fairy Bucks.\n\nNo further action is required.\n\nYou can review or withdraw your permission anytime through the Fairy Bucks Parent Portal:\nhttps://fairybucks.com/auth.html\n\nFairy Bucks | ITS Security\nP.O. Box 240\nWest Warren, MA 01092\nPhone: (774) 922-5011\nSupport: support@fairybucks.com\nPrivacy Policy: https://fairybucks.com/privacy.html\n\nIf you did not authorize this permission, please contact support or withdraw permission through your Parent Portal.\n\nFor your records, the original parent-permission notice is reproduced below:\n\n"+noticeText();
 }
 export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decode}) {
- const origin='https://fairybucks.com';
+ // Exact, temporary staging origin alongside the production domain. No wildcards or deploy previews.
+ const allowedOrigins=new Set(['https://fairybucks.com','https://fairybucks-com.netlify.app']);
  const hex=bytes=>[...new Uint8Array(bytes)].map(b=>b.toString(16).padStart(2,'0')).join('');
  const encode=value=>new TextEncoder().encode(value);
  const hash=async value=>hex(await secure.subtle.digest('SHA-256',encode(value)));
@@ -66,11 +67,11 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
  return async request=>{
   const headers={'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin'};
   const requestOrigin=request.headers.get('Origin');
-  if(requestOrigin===origin)headers['Access-Control-Allow-Origin']=origin;
+  if(requestOrigin && allowedOrigins.has(requestOrigin))headers['Access-Control-Allow-Origin']=requestOrigin;
   headers['Access-Control-Allow-Headers']='authorization,apikey,content-type,x-client-info';
   headers['Access-Control-Allow-Methods']='POST,OPTIONS';
   const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers});
-  if(requestOrigin && requestOrigin!==origin)return reply({status:'forbidden'},403);
+  if(requestOrigin && !allowedOrigins.has(requestOrigin))return reply({status:'forbidden'},403);
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
   if(request.method!=='POST')return reply({status:'method_not_allowed'},405);
   // Must be explicitly enabled AFTER provider/method review and an end-to-end test.
