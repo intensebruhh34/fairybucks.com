@@ -10,7 +10,7 @@ function fixture(options={}){
  const make=()=>{const n={hidden:true,checked:false,disabled:false,value:'',valueAsNumber:5,textContent:'',events:{},children:[],
   focus(){},append(...x){this.children.push(...x);},replaceChildren(...x){this.children=x;},reset(){},querySelectorAll(){return [];},addEventListener(name,fn){this.events[name]=fn;}};nodes.push(n);return n;};
  const $=id=>{if(!elements.has(id))elements.set(id,make());return elements.get(id);};
- const state={owner:'owner',allowed:false,pin:false,count:0,completed:false,calls:[],done:[],saved:0,reward:5,failSave:false};
+ const state={owner:'owner',allowed:false,sentEmail:false,pin:false,count:0,completed:false,calls:[],done:[],saved:0,reward:5,failSave:false};
  const ready=()=>({status:'ready',parent_id:'owner',has_pin:state.pin,explorers:state.count,completed:state.completed,first_explorer:'first',reward:state.reward});
  const client={auth:{getUser:async()=>({data:{user:{id:state.owner,email_confirmed_at:'today'}}})},rpc:async(name,args)=>{
   state.calls.push([name,args]);
@@ -22,8 +22,8 @@ function fixture(options={}){
   if(name==='fairybucks_create_parent_pin'){state.pin=true;return {data:{status:'unlocked',token:'unlock'}};}
   if(name==='fairybucks_parent_pin')return {data:{status:'unlocked',token:'unlock'}};
  },functions:{invoke:async(name,{body})=>{
-  state.calls.push([name,body]);if(body.action==='give_permission')state.allowed=true;
-  return {data:{parent_id:state.owner,status:state.allowed?'confirming':'needed',permission_allowed:state.allowed,version:3,notice_hash:'hash'}};
+  state.calls.push([name,body]);if(body.action==='give_permission')state.sentEmail=true;
+  return {data:{parent_id:state.owner,status:state.allowed?'verified':state.sentEmail?'requested':'needed',permission_allowed:state.allowed,version:3,notice_hash:'hash'}};
  }}};
  const api=new Function('document','parentNotice','siteContact','parentNoticeHash','storeChildToken','crypto','window','location',source.replace(/^import .+;$/gm,'').replaceAll('export ','')+'\nreturn {parentSetup};')(
   {getElementById:$,createElement:make},{version:3,sections:[['Notice','Required notice']]},{parentPermissionEnabled:true},async()=>'hash',()=>{},
@@ -35,7 +35,7 @@ function fixture(options={}){
 let s=fixture();await s.flow.open({id:'owner',email:'parent@example.test'});
 assert.equal(s.$('setup-permission-step').hidden,false);assert.equal(s.$('setup-guardian').checked,false);
 await s.submit('setup-permission');assert.equal(s.state.allowed,false);
-s.$('setup-guardian').checked=true;await s.submit('setup-permission');assert.equal(s.$('setup-pin-step').hidden,false);
+s.$('setup-guardian').checked=true;await s.submit('setup-permission');assert.equal(s.state.sentEmail,true);assert.equal(s.state.allowed,false);assert.equal(s.$('setup-permission-step').hidden,false);\ns.state.allowed=true;await s.$('setup-retry').events.click();assert.equal(s.$('setup-pin-step').hidden,false);
 s.$('setup-pin-new').value='493027';s.$('setup-pin-confirm').value='493028';await s.submit('setup-pin');assert.equal(s.state.pin,false);
 s.$('setup-pin-confirm').value='493027';await s.submit('setup-pin');assert.equal(s.$('setup-explorer-step').hidden,false);
 s.$('setup-nickname').value='Explorer';s.$('setup-gender').value='rather-not-say';s.$('setup-reward').valueAsNumber=7;
