@@ -61,3 +61,47 @@ The provider's public privacy statement is not by itself evidence of an account-
 - [ ] Separate owner authorization for public invitation flags after all preceding requirements have evidence.
 
 **No box is checked by creating this document.** Keep public `parentPermissionEnabled`, `privacyNoticeReviewed`, and live `enforcement_enabled` disabled pending full approval.
+
+
+## 7. Provider review request — ready for operator to send, not yet sent
+**Scope for all replies:** Fairybucks is a US family-focused service where a parent authenticates, records explorer nicknames and optional ages/gender, and shares a parent-approved one-hour child session with a child. Hosting requests can contain device information, IP addresses and persistent identifiers. Child-facing mode has no ad trackers, public profile, chat or uploads. We are assessing FTC COPPA Rule 16 CFR 312.5(b)(2)(viii), 312.2, and 312.8, not asking providers to issue an unconditional "COPPA compliant" label. Do not send actual child identifiers, tokens or customer account details via public channels.
+
+### Netlify support / trust or privacy team
+- Does the current **self-serve** subscription agreement incorporate the November 2026 DPA for our specific account, without additional signature, including logs of requests made by site end users? We saw the published DPA references self-serve and request logs; please confirm specific scope and any qualifications.
+- In static-site/edge delivery, which IP addresses, headers, cookies, session IDs or other persistent identifiers are collected from visits to `child.html`; for what purpose, retention and subprocessors? Any unrelated product analytics, cross-site tracking, marketing or advertising use of those end-user identifiers?
+- Can we disable unnecessary logs/analytics, restrict retention, or obtain written security assurances covering visitor identifiers and child-facing traffic? Are there product/account settings we should enable?
+- Are public deploy previews accessible without approval, and can they be disabled or protected to keep child sessions from staging/unreviewed builds?
+- Please identify any material exception for services marketed toward families/children under US law.
+
+**Published reference:** https://www.netlify.com/pdf/netlify-dpa.pdf/ (PDF describes self-serve DPA and end-user request logs as Customer Data); separate actual agreement and account settings still to verify.
+
+### Supabase support / security
+- For Free-tier Auth, Postgres, RPC, Edge Functions and logs: what personal data, client IP/persistent identifiers, retention, subprocessors and secondary uses occur on child-session API requests? Confirm whether the current customer DPA applies to the Free-tier account.
+- Is child-linked vault information processed solely to deliver and secure customer services, with no independent advertising/profiling? Are formal written security assurances, audit evidence and relevant subprocessor contractual commitments available?
+- Which logs/backups survive child deletion, and what deletion/retention limits apply? Which Free-tier recovery features actually exist and how should the operator limit risks while formally deferring backups?
+
+**Published reference:** https://supabase.com/legal/customer-resources/data-processing-addendum (August 1, 2026 version says DPA supplements Terms of Service), and current subprocessors page.
+
+### Resend support / privacy
+- Does the 2025 Resend DPA attach automatically on acceptance of its Terms for our existing self-serve account? Are parent verification/permission/confirmation email addresses and contents used only for delivery/security, or are any message data or identifiers used for unrelated analytics, AI training, targeting or advertising?
+- Which email delivery logs, event history, recipient information and message contents are retained, for how long, and which subprocessors have access? The current November 2026 subprocessor list includes AI-related vendors; please distinguish **possible** subprocessors from **actual processing** of our transactional email data.
+- Which bounced/failed confirmation event controls and retention/deletion options can we use on our account?
+
+**Published references:** https://resend.com/legal/dpa and https://resend.com/legal/subprocessors (the names on that list alone do not establish that a particular child's data reaches every listed company).
+
+### Legal consent-method reviewer (separate from vendor support)
+- Determine if the actual collection, hosting/CDN/network logs, Auth/database APIs, email delivery, support workflow, and any persistent identifier use constitute a 'disclosure' under §312.2, rather than qualifying internal-operations processing; confirm if the current email-plus method meets §312.5(b)(2)(viii).
+- If not appropriate, specify an accepted verifiable parental-consent alternative and what changes to direct notice, flows and evidence are required before opening public child mode.
+- Review the current v4 notice and staged v5 Netlify notice only with *sanitized* screenshots and architecture, not real parent or child data.
+
+**Official reference:** https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-312/section-312.5, including subsection (b)(2)(viii). This source requires no 'disclosure' under its defined meaning for email-plus, and separate confirmation and revocation notice.
+
+### Operator follow-up tracking — do not check until real evidence is retained privately
+- [ ] Netlify reply/account terms reviewed, privacy scope and preview settings documented privately
+- [ ] Supabase DPA/account terms and child request metadata processing verified privately
+- [ ] Resend actual data use, retention/bounce monitoring confirmed privately
+- [ ] jsDelivr, Squarespace/Mailgun forwarding and Gmail risk review completed
+- [ ] Qualified email-plus suitability determination recorded
+- [ ] Separate v5 hosting cutover decision approved, still with public enrollment **off**
+
+**Current decision:** Even after all vendor responses, do not switch public consent flags on without a qualified interpretation of the facts and a separately owner-approved launch change.
