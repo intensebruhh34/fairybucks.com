@@ -68,3 +68,12 @@ This addendum supersedes the dated *status* of earlier P2 items only; the earlie
 6. Re-run GitHub suite and Supabase advisors after any release changes. Evaluate each remaining advisor warning, and document accepted architecture-specific limitations with reviewer/date.
 
 **Decision remains NO-GO for public child enrollment**, irrespective of the success of the checks above, until provider facts, consent-method eligibility and operator security obligations are resolved and explicitly approved.
+
+
+## Operator browser rehearsal completed — November 23, 2026
+
+The operator reports testing Netlify staging using the private, email-verified test parent account. On both laptop and phone, unverified public child handoff displayed “Review and verify parent permission before opening child mode.” The operator subsequently used the authorized private rehearsal, signed in, handed over the magic, entered Child Mode, requested three treasures, declined one, approved two, advanced them to different delivery stages, and verified the displayed Fairy Bucks balance and tooth count. These are **operator-reported browser results**, not independent automated browser recordings; the detailed delivery transitions, email timestamps, network destinations, child content inspection, and second-family isolation were not captured in this test report.
+
+Immediately after the test, the existing operator rehearsal-close SQL was executed for the selected account: test approval withdrawn, pending permission requests withdrawn and tokens cleared, child sessions deleted, and rehearsal selection removed. Read-only SQL verification returned **0 rehearsal rows, 0 child sessions, 0 non-withdrawn consents, and 0 non-withdrawn email requests** for the selected account. The global release settings remained `enforcement_enabled=false`, `notice_ready=false`, and `email_method_reviewed=false`.
+
+**Status:** Core shopping/rewards walkthrough is operator-accepted; test cleanup verified. The production launch decision remains **NO-GO** until the outstanding provider/legal/COPPA method, security warning disposition, and final-host testing gates are resolved. This addendum does not authorize a DNS change, Edge deployment, live SQL migration, public switch, or merge.
