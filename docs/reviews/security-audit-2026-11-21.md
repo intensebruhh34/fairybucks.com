@@ -45,3 +45,26 @@ Audit queries were metadata-only; no family information was returned or changed,
 Supabase security lint resources: [database linter](https://supabase.com/docs/guides/database/database-linter), [privileged function guidance](https://supabase.com/docs/guides/database/functions#security-definer-vs-invoker). This document is a **snapshot** requiring follow-up tests, not a certificate or legal conclusion.
 
 **Operator release decision: OPEN.** Any code changes proposed to address this report require separate owner-reviewed pull requests.
+
+
+## Follow-up checkpoint — November 23, 2026 (read-only)
+
+This addendum supersedes the dated *status* of earlier P2 items only; the earlier observations remain historical. PR #74 has since merged the **public allowlist exclusion for `permission-test.html` / `permission-test.js`** and **report-only dynamic CSP**. The report-only policy does not establish that enforcing CSP will work in all browsers. The dependency still uses the jsDelivr major-version URL.
+
+### Current evidence
+- GitHub Actions on current `main`: latest permission/vault workflow **completed successfully**, run [45264708930](https://github.com/intensebruhh34/fairybucks.com/actions/runs/45264708930). Automated code tests do not constitute a two-account live browser trial.
+- Supabase `private.fairybucks_privacy_release` read-only snapshot: **notice v4** (hash starts `121eaeaebaec`); `notice_ready=false`, `email_method_reviewed=false`, `enforcement_enabled=false`. Public child enrollment remains shut down.
+- `pg_tables` inspection: **8 public and 20 private tables all have RLS enabled**. Private tables with RLS and no policies are expected to deny public roles; a missing policy warning is not itself an exposure finding. RLS enablement does not independently verify every privileged function.
+- Fresh Supabase security advisor flags: `pg_net` extension in `public` (WARN), a callable `SECURITY DEFINER` child-action RPC for `anon` (WARN), other authenticated privileged RPCs (WARN), and unavailable leaked-password detection (WARN). Prior synthetic token/ownership tests were reported passing; **the publicly callable child RPC remains an intended token-authenticated entrypoint requiring focused threat review**, not a risk-free finding. No privilege changes were made.
+- Supabase `cron.job`: `fairybucks-permission-confirmation` and `fairybucks-retention-cleanup` both active. Confirmation job runs at one-minute intervals and recent cron executions reported **succeeded** through 22:20 UTC November 23. Daily cleanup succeeded at 03:17 UTC November 21, 22 and 23. A successful cron run does not alone prove third-party email delivery or correctness of all cleanup decisions.
+- Netlify project reports its current deploy is **ready**, but the static URL cannot be interactively exercised by this connector. The real-browser network, PIN, sign-up, notice, family-isolation and deletion journey remains **not tested in this checkpoint**.
+
+### Remaining launch tests, with evidence boundary
+1. On actual final host, complete two separate parent/browser accounts and verify no cross-family read, request, edit, or child handoff. Do not use actual child identifying information in test screenshots.
+2. Verify real Resend request/approval/delayed-confirmation delivery, bounced-delivery handling and withdrawal with the correct v5 parent notice and email method after authorized migration.
+3. Verify unauthorized, revoked, malformed and expired child-session API tokens are denied against the **actual deployed** RPCs; synthetic SQL rollback checks are supportive but not enough alone.
+4. Check anonymous child page and parent page in browser Network tab; record provider hostnames without storing session tokens or personal data.
+5. Confirm Netlify public build denies source-directory paths, redirects keep exact permitted origins, privacy page matches host and certificates, and both parent and child copy remain appropriate.
+6. Re-run GitHub suite and Supabase advisors after any release changes. Evaluate each remaining advisor warning, and document accepted architecture-specific limitations with reviewer/date.
+
+**Decision remains NO-GO for public child enrollment**, irrespective of the success of the checks above, until provider facts, consent-method eligibility and operator security obligations are resolved and explicitly approved.
