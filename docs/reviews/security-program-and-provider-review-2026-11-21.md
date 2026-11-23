@@ -105,3 +105,20 @@ The provider's public privacy statement is not by itself evidence of an account-
 - [ ] Separate v5 hosting cutover decision approved, still with public enrollment **off**
 
 **Current decision:** Even after all vendor responses, do not switch public consent flags on without a qualified interpretation of the facts and a separately owner-approved launch change.
+
+
+## 8. Direct source review: child-facing external-resource inventory (November 23, 2026)
+
+Reviewed **current `main` source**, not an actual browser network capture. This is a source-code assessment only; CSS imports, redirects, third-party infrastructure, Edge Functions and network-layer headers require additional verification.
+
+| Entry | Observed direct source references | Scope / action |
+| --- | --- | --- |
+| `child.html` | Local `/auth-config.js`, local module `/child-vault.js`, local `/vault-theme.css`, and a link to the same-site privacy page; **no direct third-party script URL in the HTML** | Encouraging reduction in child-browser third-party JavaScript; inspect complete network traffic in browser before final clearance. |
+| `child-vault.js` | Local import `/treasure-catalog.js`; client connects to the configured Supabase endpoint using browser `fetch` | Child-session API calls still expose request metadata to Supabase; provider review remains necessary. |
+| `auth.html` | Dynamic module import from `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm` | **Third-party jsDelivr request on parent sign-in/setup page**. Parent device IP and request metadata may reach CDN; dependency version is major-version-wide rather than an exact pinned release. Consider independently tested self-hosting and exact-version pinning in a separate reviewed PR. Do not make this change as a quick untested prelaunch switch. |
+| `auth-config.js` | Public Supabase project URL and publishable key | Intended public client configuration, **not a service-role secret**. Verify network destinations and authentication headers; never expose credentials in public source. |
+| `privacy.html` | Lists GitHub Pages as current host, and Resend, Supabase, jsDelivr, Squarespace forwarding and Gmail | Correct for present GitHub hosting; **must coordinate with staged Netlify notice v5** in PR #71. Do not merge host-language changes independently from DNS notice/consent cutover. |
+
+**Read-only configuration check:** `site-contact.js` on `main` still has `privacyNoticeReviewed: false` and `parentPermissionEnabled: false`. The live Supabase privacy-release row was separately verified on November 23 with `notice_version=4`, `notice_ready=false`, `enforcement_enabled=false`, `email_method_reviewed=false`. The Netlify project reports a ready deploy; these facts **do not** authorize public permission enrollment.
+
+**Decision:** Keep provider and legal review open, plan a browser Network-tab capture for both child and parent entry flows, and treat minimizing jsDelivr exposure as a **separate testable hardening opportunity**, not as a prerequisite that is already complete.
