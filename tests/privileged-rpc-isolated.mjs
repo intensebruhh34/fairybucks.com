@@ -95,8 +95,8 @@ for(const [name,args] of [
  ['fairybucks_tooth_reward',[CB,TOKEN,5]],
  ['fairybucks_decide_treasure',[CB,RB,'approved',TOKEN]],
  ['fairybucks_update_delivery',[CB,RB,'packaging','workshop',TOKEN]],
- ['fairybucks_parent_purchase',[CB,RB,TOKEN]]
 ]) await assertDenied(()=>run(name,...args),name+' must deny another parent asset');
+assert.equal((await run('fairybucks_parent_purchase',CB,RB,TOKEN)).status,'unavailable','Private purchasing option must not leak across families');
 assert.equal((await run('fairybucks_delete_explorer',CB,A,'Child B','DELETE','123456')).status,'unavailable');
 assert.equal((await run('fairybucks_edit_explorer',CB,'Unsafe',7,'rather-not-say',A,{})).status,'unavailable');
 assert.equal(await balance(CB),30);
