@@ -24,6 +24,14 @@ Also checked Supabase security advisor findings, and existing `tests/child-mode.
 
 The wrapper checks parental permission before calling the core. A full adversarial integration suite still needs to demonstrate the actual database behavior for revoked/expired tokens, cross-explorer requests, withdrawal during child mode, duplicate requests, and lifecycle operations. Token secrecy matters: possession of a valid child token authorizes access until expiration, revocation, or permission failure. Do not expose token hashes or raw tokens in logs/tests.
 
+## Follow-up read-only server-side call-chain inspection
+
+Inspected the **live** definitions of `public.fairybucks_start_child_session`, `private.fairybucks_start_child_session_core` and `private.fairybucks_submit_for_explorer`.
+
+- Session startup wrapper requires `private.fairybucks_child_permission(auth.uid())`; the core separately checks the live parent Auth session in `auth.sessions`, parent unlock-token hash/expiry, and explorer family ownership. It generates 32 random bytes, exposes the 64-character hex token once, stores only its SHA-256 hash, and sets a **one-hour** expiration. Starting a new child session for an explorer replaces that explorer's previous token.
+- The submit helper serializes submissions per explorer with a row lock, looks up price server-side, checks active catalog item and expected price, blocks an already-pending identical treasure, and reserves pending request prices against wallet balance. Duplicate matching request IDs return `requested`. This appears to prevent several obvious price-forgery/double-request avenues **by design**, but requires actual concurrent integration testing.
+- These checks are **code inspection**, not proof against forged identity claims, race conditions, RLS bypasses, or unexpected direct `EXECUTE` privileges. In particular, the private helper's invocation privileges and the complete caller chain should be checked before concluding it cannot be called directly.
+
 ## Required isolated-environment regression matrix
 
 Use synthetic parents, explorers, treasures, requests and child tokens created in a **separate test database**; exercise the actual deployed function definitions (not rewritten mocks):
