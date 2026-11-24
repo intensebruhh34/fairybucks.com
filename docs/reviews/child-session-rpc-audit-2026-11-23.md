@@ -54,6 +54,12 @@ Use synthetic parents, explorers, treasures, requests and child tokens created i
 
 Do **not** run mutation cases against the live family/test account. Transaction rollback is not a substitute for a separate test environment for email, network, or other side effects.
 
+## CI regression implemented in this draft PR
+
+- `tests/fixtures/child-rpc-live-2026-11-23.sql` contains the exact existing **live function definitions** for the public child entrypoint, private core, and private submit helper, captured read-only on November 23. It does not include family records or secret token values. The snapshots must be refreshed/reviewed when the production functions change.
+- `tests/child-rpc-isolated.mjs` executes those definitions in disposable PGlite using synthetic parents/explorers/tokens, with deterministic stand-ins for the digest function and consent decision. It covers malformed, unknown, expired and ended tokens, scoped requests, forged prices, idempotence, withdrawal and cancellation. The test is included in `tests/package.json`.
+- **Test limitations:** this is not a full Supabase/PostgREST or live-network penetration test; it does not prove pgcrypto correctness, real consent record evaluation, parent session issuance, or true simultaneous transaction races. Its consent helper is deliberately mocked, so do not describe the full consent pipeline as adversarially verified. Check the PR CI status before treating the suite as passing.
+
 ## Open checks and next implementation
 
 1. Inspect `private.fairybucks_submit_for_explorer`, child session creation/revocation and all call chains for price bounds, ownership, consent gating, unexpected grants, and race conditions.
