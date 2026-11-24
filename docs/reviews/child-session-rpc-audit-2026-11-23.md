@@ -30,7 +30,8 @@ Inspected the **live** definitions of `public.fairybucks_start_child_session`, `
 
 - Session startup wrapper requires `private.fairybucks_child_permission(auth.uid())`; the core separately checks the live parent Auth session in `auth.sessions`, parent unlock-token hash/expiry, and explorer family ownership. It generates 32 random bytes, exposes the 64-character hex token once, stores only its SHA-256 hash, and sets a **one-hour** expiration. Starting a new child session for an explorer replaces that explorer's previous token.
 - The submit helper serializes submissions per explorer with a row lock, looks up price server-side, checks active catalog item and expected price, blocks an already-pending identical treasure, and reserves pending request prices against wallet balance. Duplicate matching request IDs return `requested`. This appears to prevent several obvious price-forgery/double-request avenues **by design**, but requires actual concurrent integration testing.
-- These checks are **code inspection**, not proof against forged identity claims, race conditions, RLS bypasses, or unexpected direct `EXECUTE` privileges. In particular, the private helper's invocation privileges and the complete caller chain should be checked before concluding it cannot be called directly.
+- **Verified database grants:** `anon` and `authenticated` have neither `USAGE` on schema `private` nor `EXECUTE` on `fairybucks_child_action_core`, `fairybucks_start_child_session_core`, `fairybucks_submit_for_explorer`, or `fairybucks_child_permission`. Direct calls to these private helpers are not authorized for those API roles. This is positive defense in depth; still test the public wrappers adversarially.
+- These checks are **code inspection and grant inspection**, not proof against all forged claims, race conditions, RLS bypasses, or incorrect behavior through authorized public entrypoints.
 
 ## Required isolated-environment regression matrix
 
