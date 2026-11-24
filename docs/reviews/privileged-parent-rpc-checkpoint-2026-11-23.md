@@ -40,3 +40,14 @@ Role grant inspection: these RPCs had no `anon` EXECUTE grant and `authenticated
 4. Review `pg_net` dependencies, leaked-password protection, pinned CDN dependencies, backups/restore, provider written assurances, parental-consent suitability, and staged launch notice coordination.
 
 **Status: protected-route checks and basic ledger invariants PASSED in isolated fixture; broader security audit remains OPEN.**
+
+## November 24 follow-up: destructive flows + true parallel PostgreSQL sessions
+
+- `tests/privileged-deletion-isolated.mjs` executes the exact existing `fairybucks_delete_explorer` and `fairybucks_delete_account` bodies against fictional parent/family/explorer/session and dependency rows in disposable PGlite. Verified: PIN/confirmation/name matching, wrong-account denial, recent sign-in check, rollback when an unexpected foreign-key dependency blocks a deletion, sibling preservation on explorer deletion, complete cleanup on account deletion, revoked child sessions, and other-family isolation. **CI passed** (Permission and vault checks run 45465577683). Auth and PIN functions remain test doubles: this is not a production end-to-end PIN or JWT test.
+- `tests/privileged-concurrency-postgres.mjs` runs the installed RPC SQL bodies against a temporary **real PostgreSQL 17 service** using distinct concurrent PostgreSQL connections. Verified simultaneous requests for the same tooth recording, duplicate tooth undo, approval, refund, duplicate same-item treasure submission, and two different 15-FB item submissions against a 20-FB wallet. Expected serialization, idempotence and balance ceilings all held. **CI passed** (Isolated PostgreSQL concurrency safety run 45465903481); log confirms `PASS real PostgreSQL concurrent-session safety`.
+- Both new tests are run in GitHub Actions and never connect to the real Supabase host. Live application data, email/SMS calls, Edge Functions, migrations and release settings were untouched.
+- Test coverage limits: this does not certify long-running race/stress behavior, actual Netlify/Supabase API JWT verification, true production operator PIN implementation, every database trigger/foreign-key in the hosted schema, or provider/COPPA compliance. Actual destructive staging rehearsals and release checklist remain pending.
+
+## Follow-up infrastructure review checkpoint
+
+The live Supabase database reports `pg_net` installed under `public` and `pg_cron` under `pg_catalog`. A search of routine source text found `private.fairybucks_confirmation_tick` uses `net.http_*`. Relocating `pg_net` without analyzing its dependent confirmation scheduling can disrupt permission email delivery; **do not relocate or disable it in this audit PR**. Prior Supabase advisor warnings and launch blockers around leaked password protection, CDN pinning, backups and legal/provider assurances are tracked separately.
