@@ -60,6 +60,12 @@ Do **not** run mutation cases against the live family/test account. Transaction 
 - `tests/child-rpc-isolated.mjs` executes those definitions in disposable PGlite using synthetic parents/explorers/tokens, with deterministic stand-ins for the digest function and consent decision. It covers malformed, unknown, expired and ended tokens, scoped requests, forged prices, idempotence, withdrawal and cancellation. The test is included in `tests/package.json`.
 - **Test limitations:** this is not a full Supabase/PostgREST or live-network penetration test; it does not prove pgcrypto correctness, real consent record evaluation, parent session issuance, or true simultaneous transaction races. Its consent helper is deliberately mocked, so do not describe the full consent pipeline as adversarially verified. Check the PR CI status before treating the suite as passing.
 
+## Follow-up CI: parent-to-child session issuance
+
+- `tests/fixtures/child-session-issue-live-2026-11-23.sql` snapshots the installed `public.fairybucks_start_child_session` wrapper and `private.fairybucks_start_child_session_core` function bodies (read-only).
+- `tests/child-session-issue-isolated.mjs` exercises those exact bodies against a disposable in-memory PostgreSQL fixture. It tests: missing/mismatched/revoked parent Auth session, denied parent permission, invalid/expired PIN unlock, cross-family explorer, successful token issuance and hashed storage, and consumed unlock preventing immediate reuse.
+- GitHub Actions `Permission and vault checks` **passed** at commit `65cdaf9944e37d29694e01569aba5595920bbec8` (run 45296540434). Passing CI demonstrates the synthetic fixture tests; it does **not** verify real email-plus records, JWT verification over HTTP, production network behavior, or race conditions. An actual permission-withdrawal integration remains an open launch gate.
+
 ## Open checks and next implementation
 
 1. Inspect `private.fairybucks_submit_for_explorer`, child session creation/revocation and all call chains for price bounds, ownership, consent gating, unexpected grants, and race conditions.
