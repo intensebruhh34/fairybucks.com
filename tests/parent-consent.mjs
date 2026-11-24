@@ -72,4 +72,4 @@ assert.match(page,/#consent-refresh\{display:block;min-height:44px;margin:12px 0
 assert.match(privacy,/checkbox does not grant child access/);
 
 assert.match(parentNotice.sections.find(([name])=>name==='Who helps run it')[1],/Netlify hosts the website/);
-assert.match(readFileSync(new URL('privacy.html',root),'utf8'),/Netlify:<\/strong> hosts the website/);
+assert.match(readFileSync(new URL('privacy.html',root),'utf8'),/Netlify:<\/strong> currently hosts the website/);
