@@ -66,6 +66,13 @@ Do **not** run mutation cases against the live family/test account. Transaction 
 - `tests/child-session-issue-isolated.mjs` exercises those exact bodies against a disposable in-memory PostgreSQL fixture. It tests: missing/mismatched/revoked parent Auth session, denied parent permission, invalid/expired PIN unlock, cross-family explorer, successful token issuance and hashed storage, and consumed unlock preventing immediate reuse.
 - GitHub Actions `Permission and vault checks` **passed** at commit `65cdaf9944e37d29694e01569aba5595920bbec8` (run 45296540434). Passing CI demonstrates the synthetic fixture tests; it does **not** verify real email-plus records, JWT verification over HTTP, production network behavior, or race conditions. An actual permission-withdrawal integration remains an open launch gate.
 
+## Full permission-function regression (isolated)
+
+- `tests/fixtures/child-permission-live-2026-11-23.sql` contains exact installed definitions of `private.fairybucks_child_permission` and `private.fairybucks_effective_permission_release` obtained by read-only introspection.
+- `tests/child-permission-isolated.mjs` executes them with synthetic consent, Auth user metadata, rehearsal and email-confirmation records in disposable PGlite. It checks withdrawn permission, old/mismatched notice version or hash, release flags, another parent's consent, unverified email, mismatched recipient, unapproved/no-notice email request, missing confirmation, queued versus sent confirmation and expired rehearsal.
+- GitHub Actions at commit `e00fd4be8124242cd04e7f3fb76b507304dd655f` (run `45297010274`) completed **successfully**, including `npm test`.
+- **Remaining limitations:** fixtures do not exercise actual Resend delivery, JWT/network authorization, cross-transaction concurrency, or the production consent mail/withdrawal Edge Function. No real consent rows were mutated and no full live end-to-end permission test is claimed. The observed queued-confirmation acceptance is existing intended behavior, but deserves operational review.
+
 ## Open checks and next implementation
 
 1. Inspect `private.fairybucks_submit_for_explorer`, child session creation/revocation and all call chains for price bounds, ownership, consent gating, unexpected grants, and race conditions.
