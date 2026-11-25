@@ -1,0 +1,48 @@
+name: Isolated PostgreSQL concurrency safety
+on:
+  pull_request:
+    paths:
+      - 'tests/privileged-concurrency-postgres.mjs'
+      - 'tests/fixtures/privileged-rpc-live-2026-11-23.sql'
+      - 'tests/fixtures/private-treasure-submit-live-2026-11-23.sql'
+      - '.github/workflows/privileged-concurrency.yml'
+permissions:
+  contents: read
+jobs:
+  postgres-race-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-ci-only
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: local-ci-only
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ensure isolated PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          psql -X -Atqc 'select version();'
+      - name: Parallel independent-session database race checks
+        run: node tests/privileged-concurrency-postgres.mjs
