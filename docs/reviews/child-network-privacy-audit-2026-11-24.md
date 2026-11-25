@@ -6,7 +6,7 @@
 
 - GitHub `main` source (current website and static publish manifest): `child.html`, `child-vault.js`, `child-session.js`, `auth-config.js`, `index.html`, `auth.html`, `permission.html`, `permission-page.js`, `public-shop.js`, `privacy.html`, `netlify.toml`, `tools/build-public-site.mjs`.
 - Netlify connection confirmed the `fairybucks-com` site on Netlify's developer plan, with ready published deployment and forms disabled. Its aggregate edge request statistics confirm hosting receives traffic; those statistics do **not** expose a browser's complete request waterfall or Supabase traffic.
-- An attempt to fetch deployed `fairybucks.com` pages via remote page inspection was unsuccessful. Therefore a full browser live-network/HAR observation **was not performed** and no claim is made that the live deployment matches the current GitHub source byte-for-byte.
+- Remote page inspection was unavailable. On November 25, 2026, the operator supplied photographs of Microsoft Edge DevTools **Network** results for homepage (7 requests) and Parent Portal navigation/authentication (52 cumulative requests), with a Domain column on successive views. This verifies selected runtime requests, **not** a complete sanitized HAR or exhaustive audit of all 52 destinations. Child Mode was blocked by the existing parent-permission gate; no child access or browser capture was performed.
 - The `netlify.toml` headers and public build script were inspected, but **CSP is currently report-only** for strict script/connect allowlisting; it does not yet enforce third-party request restrictions.
 
 ## Confirmed by source inspection
@@ -25,17 +25,18 @@
 
 ### Explicitly not verified
 
-1. No full browser HAR / DevTools capture of initial landing, `/auth.html` or `/child.html`; therefore **no claim of zero hidden third-party requests**, nor any definitive inventory of Supabase SDK module dependency fetches, can be made.
-2. No child browser was signed in and no parent tokens, PINs, consent emails or real user data were used in this audit.
+1. Screenshots of homepage and parent requests were reviewed: the homepage displayed same-origin HTML/CSS/JS/inline images; Parent Portal displayed requests to `fairybucks.com`, `cdn.jsdelivr.net` (Supabase ESM library modules), and the configured Supabase project domain. No obvious advertising/pixel domain appeared in the **shown** requests. These views do **not** establish absence of undisplayed domains; no complete HAR exists, and `/child.html` was **not** tested because access remained correctly denied.
+2. The operator used an authorized parent test session. No credentials, cookies, JWTs, PINs, request payloads or child-session tokens were requested or stored in this repository. Child Mode did not open.
 3. Netlify and Supabase host/CDN infrastructure can collect identifiers at the network edge even when website JavaScript contains no tracker. This source audit cannot determine how providers' internal subprocessors use those identifiers.
 4. The embedded publishing key is designed for public clients, but the child session token must remain secret. Third-party JavaScript loaded on same-origin parent pages warrants supply-chain review and strict CSP before launch.
 5. Existing Netlify DPA and subprocessor list provide contractual evidence, not standalone proof of COPPA compliance or confirmed use of particular subprocessors on each request.
 
 ## Proposed changes / tests
 
-- Update `privacy.html` to identify **Netlify** rather than GitHub Pages, with accurate request/log disclosure. No claim that all logs are deleted immediately.
+- The Netlify hosting discrepancy is addressed in **staged PR #71**, alongside versioned parental reconsent; this separate audit PR deliberately does not edit the current notice.
 - Add `tests/child-network-privacy.mjs`, a **static regression** that checks child HTML for newly added third-party resources, child imports and explicit RPC destination, credential/referrer controls, session token storage boundary, current notice mismatch reporting, and known tracker signatures. This is intentionally limited to inspected source patterns; a pass is **not a live network proof**.
 - Add it to `tests/package.json` CI test command. Require GitHub Actions checks to pass before review.
-- Next separate review: use a controlled desktop browser with DevTools Network Preserve Log, filter by Domain, reload landing/parent/child page with fictional test account, export a **sanitized HAR** (remove authorization headers, JWTs, emails, child tokens, IPs, request bodies and cookies) or use an ephemeral browser harness. Ensure that any HAR is never committed to a public repository.
+- **Next (deferred, no gate bypass):** when a legitimately verified permission test parent can enter Child Mode, capture its Domain column for entry, treasure shop and exit. Avoid exporting raw HAR; never commit identifiers or authentication artifacts to the repository. No need to troubleshoot intentionally disabled email-rehearsal functionality as part of this network audit.
+- **Separate issue observed:** despite `main` static publish manifest excluding `permission-test.html`, operator could open that URL on `fairybucks.com` and the associated Supabase rehearsal function responded 503. Actual domain routing/build provenance should be independently checked before release. This is not proof of an exploitable bypass, and the email rehearsal does not grant consent.
 
 **Launch assessment:** Child Mode code has no *identified* third-party marketing analytics/pixel SDKs, but does send child-session RPCs to Supabase and page requests to Netlify. Hosting/identity logs require provider privacy review and real browser confirmation. Keep public enrollment OFF.
