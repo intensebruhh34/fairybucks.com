@@ -2,7 +2,7 @@
 // Keep this snapshot identical to parent-notice.js/site-contact.js; tests enforce parity.
 export const permissionSnapshot = {
   "notice": {
-    "version": 4,
+    "version": 5,
     "title": "Permission for your family's Fairy Vault",
     "sections": [
       [
@@ -15,7 +15,7 @@ export const permissionSnapshot = {
       ],
       [
         "Who helps run it",
-        "GitHub Pages hosts the website. Supabase provides authentication, database and access controls. Resend delivers account and permission emails. jsDelivr serves the authentication library on parent pages. Support messages are forwarded to the operator's Gmail inbox. These services are used to operate, secure and support the vault; the full Privacy notice explains the providers and their purposes. This website does not sell family information or use it for targeted advertising. This permission does not authorize unrelated disclosures or optional advertising."
+        "Netlify hosts the website and serves the child-facing pages and printables. Supabase provides authentication, database and access controls. Resend delivers account and permission emails. jsDelivr serves the authentication library on parent pages. Support messages are forwarded to the operator's Gmail inbox. These services are used to operate, secure and support the vault; the full Privacy notice explains the providers and their purposes. This website does not sell family information or use it for targeted advertising. This permission does not authorize unrelated disclosures or optional advertising."
       ],
       [
         "Retention and deletion",

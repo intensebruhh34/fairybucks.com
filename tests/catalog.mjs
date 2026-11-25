@@ -26,7 +26,7 @@ insert into auth.sessions values(gen_random_uuid(),'44a684ee-6e65-4098-80d7-3a21
 insert into families(owner_id) select id from auth.users;
 update auth.users set email=id::text||'@example.test',email_confirmed_at=now();`);
 const legacyExplorerCheck=process.argv.includes('--explorer-without-consent');
-const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')&&!f.includes('retention_periods')&&!f.includes('delayed_permission_confirmation')&&!f.includes('guided_parent_setup')&&!f.includes('five_minute_permission_confirmation')&&!f.includes('fail_closed_child_permission')&&!f.includes('parent_notice_v4_email_link')));
+const files=readdirSync(root+'/supabase/migrations').sort().filter(f=>!legacyExplorerCheck||(!f.includes('parent_consent')&&!f.includes('account_permission_rehearsal')&&!f.includes('retention_cleanup')&&!f.includes('retention_periods')&&!f.includes('delayed_permission_confirmation')&&!f.includes('guided_parent_setup')&&!f.includes('five_minute_permission_confirmation')&&!f.includes('fail_closed_child_permission')&&!f.includes('parent_notice_v4_email_link')&&!f.includes('parent_notice_v5_netlify_host')));
 if(!legacyExplorerCheck)await db.exec(`
 create schema vault;create schema net;create schema cron;
 create table vault.decrypted_secrets(id uuid primary key,decrypted_secret text);
