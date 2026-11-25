@@ -1,5 +1,5 @@
 # Fairybucks — written information-security and provider review (operator adoption draft)
-**Prepared:** 2026-11-21. **Status:** NOT ADOPTED / NOT LEGALLY CLEARED / NOT A PUBLIC-RELEASE AUTHORIZATION.
+**Prepared:** 2026-11-21. **Updated:** 2026-11-25. **Status:** OPERATOR-REVIEW DRAFT / NOT FORMALLY ADOPTED / NOT LEGALLY CLEARED / NOT AUTHORIZATION TO ACCEPT REAL FAMILY ENROLLMENT.
 
 This draft describes concrete obligations for ITS Security to review, fill in privately, implement, and adopt before inviting real families. Its existence in GitHub does not demonstrate operational compliance. Do **not** put real parent emails, child names, logs, accounts, tokens, private contracts or security recovery details in this public repository.
 
@@ -11,15 +11,15 @@ This draft describes concrete obligations for ITS Security to review, fill in pr
 ## 2. Risk assessment and safeguards
 | Risk | Existing/observed control | Further action required |
 | --- | --- | --- |
-| Child record exposed to another family | Supabase RLS and private API tests; scoped child session | Confirm privileged API authorization and perform final cross-account and revoked-token browser tests |
-| Unauthorized parent access | Supabase Auth and 6-digit parent PIN on protected actions; reported MFA for operator services | Verify administrative MFA/recovery-code handling, least privilege and shared-device sign-out; maintain private access roster |
+| Child record exposed to another family | Supabase RLS, merged PRs #78/#79 child/privileged RPC isolated regressions, scoped child sessions | Complete final integrated cross-account and revoked-token tests in controlled test environment; isolated CI is not a full penetration test |
+| Unauthorized parent access | Supabase Auth and 6-digit parent PIN on protected actions; live parent-session validation for treasure-request listing applied from PR #77 on Nov 25; reported MFA for operator services | Verify administrative MFA/recovery-code handling, least privilege and shared-device sign-out; maintain private access roster |
 | Access without valid guardian permission | Notice/version/hash checks, unique email link, verified parent login, separate guardian approval and delayed confirmation, server deny by default | Independent email-plus suitability review; validate v5 approval, refusal, withdrawal and expiry in actual cutover |
 | Over-collection | Child has no login, public profile, chat or upload; optional age/gender; nicknames encouraged | Assess whether optional gender/age are necessary; verify all child page requests and third-party script/network activity |
 | Unnecessary provider transfer | No advertising analytics indicated in current site; contract sources identified | Perform vendor-by-vendor internal-operations and written-assurance assessment (below) |
 | Lost or corrupted vault data | No project backup on Supabase Free according to prior operator check | **Open high-impact risk**: decide budget/plan and document a tested restricted export+restore process before live storage; do not claim recoverability |
 | Incident / credential compromise | Some technical safeguards exist | Adopt detection, incident log, containment, credential rotation, breach assessment, required notifications and recovery owner; run an exercise |
 | Excess retention | Published privacy schedule and automatic scheduled jobs | Verify schedules, support/deletion case tracker, access requests and provider log/backups; document exceptions |
-| DNS/hosting cutover | Netlify staging tested; DNS identified; consent upgrade draft PR #71 | Secure HTTPS; verify Auth callbacks and v5 fingerprints; avoid unreviewed public activation; restore DNS from saved values if needed |
+| Public hosting and consent update | fairybucks.com already serves through Netlify; existing public notice still says GitHub Pages; privacy notice v5 is staged in PR #71 | Coordinate accurate Netlify disclosure, v5 backend notice/reconsent and Auth callbacks; do not activate family enrollment during incomplete cutover |
 
 ## 3. Operational procedures for operator adoption
 1. **Daily when pilot/public service is active:** check support inbox and Resend delivery-failure/bounce status; investigate unresolved cases and failed background jobs. Never forward child records to third parties by default.
@@ -41,7 +41,7 @@ The provider's public privacy statement is not by itself evidence of an account-
 | **jsDelivr** | Browser requests on parent pages for authentication script | [Privacy](https://www.jsdelivr.com/terms/privacy-policy). | Determine actual page exposure and logs/persistent identifier use; consider self-hosting the JS bundle to reduce providers. |
 | **Squarespace email forwarding + Mailgun** | Forwarded incoming support messages, routing data | Operator's existing provider and DNS setup; public provider contracts to review. | Verify support-only purpose, written assurances and retention/forwarding handling; prohibit unnecessary child details in tickets. |
 | **Google Gmail** | Operator support inbox | [Google privacy](https://policies.google.com/privacy). | Verify suitable service terms for support data, access controls, retention and response procedures. |
-| **GitHub** | Source code and CI after migration; old Pages host until DNS completes | [GitHub privacy](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement). | Verify no child records or secrets in repository/issues/build artifacts; discontinue public hosting once Netlify is active. |
+| **GitHub** | Source code, pull requests and CI; not current production website host | [GitHub privacy](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement). | Verify no child records or secrets in repository/issues/build artifacts; discontinue public hosting once Netlify is active. |
 
 ## 5. Legal determination requiring qualified review
 **Email-plus is not a generic parental-consent substitute.** Under 16 CFR 312.5(b)(2)(viii), use of email plus additional measures is conditional on the operator not 'disclosing' children's personal information as defined by §312.2. Technical delivery was tested; actual provider data-processing eligibility is not yet determined. If the conditions do not apply, do not activate public child mode using this approach; substitute a method that meets the Rule and retest.
@@ -56,11 +56,11 @@ The provider's public privacy statement is not by itself evidence of an account-
 - [ ] Qualified review confirms current **email-plus** method is suitable for this exact data flow, or the method is replaced.
 - [ ] Written retention/data-access/deletion procedures and case logs are operationally adopted and tested.
 - [ ] Data-recovery limitation knowingly resolved or mitigation tested; don't infer backups from a Git repository.
-- [ ] Netlify v5 cutover PR #71 coordinated with consent back end and DNS; first test parent's reapproval validated.
-- [ ] Final technical and mobile tests passed with no-consent/withdrawn/expired-token access denied.
+- [ ] Netlify v5 notice and back-end release coordinated through staged PR #71; test parent's reapproval validated. Domain already resolves to Netlify; remaining issue is accurate notice and controlled consent cutover.
+- [ ] Final integrated technical and mobile tests passed with no-consent/withdrawn/expired-token access denied; use fictional test families before enabling real-family enrollment.
 - [ ] Separate owner authorization for public invitation flags after all preceding requirements have evidence.
 
-**No box is checked by creating this document.** Keep public `parentPermissionEnabled`, `privacyNoticeReviewed`, and live `enforcement_enabled` disabled pending full approval.
+**No box is checked by creating this document.** Do not enable public parental-permission enrollment, notice-review or live consent-release flags pending full approval. A privately controlled, fictional-account pilot may occur on the already-public production domain only if safeguards prohibit collecting real children's information without valid consent.
 
 
 ## 7. Provider review request — ready for operator to send, not yet sent
@@ -104,12 +104,12 @@ The provider's public privacy statement is not by itself evidence of an account-
 - [ ] Qualified email-plus suitability determination recorded
 - [ ] Separate v5 hosting cutover decision approved, still with public enrollment **off**
 
-**Current decision:** Even after all vendor responses, do not switch public consent flags on without a qualified interpretation of the facts and a separately owner-approved launch change.
+**Current decision:** Even after all vendor responses, do not switch public consent flags on without a qualified interpretation of the facts and a separately owner-approved launch change. A production domain being publicly reachable does not imply approval to collect children's information, and an unpublished URL is not an access control.
 
 
 ## 8. Direct source review: child-facing external-resource inventory (November 23, 2026)
 
-Reviewed **current `main` source**, not an actual browser network capture. This is a source-code assessment only; CSS imports, redirects, third-party infrastructure, Edge Functions and network-layer headers require additional verification.
+Reviewed the **November 23 `main` source snapshot**. On November 25, the operator also examined homepage and parent-site requests in Edge DevTools (see merged PR #80); this was a partial browser-domain inspection, not an exhaustive HAR or child-mode traffic test. CSS imports, redirects, third-party infrastructure, Edge Functions and network-layer headers require additional verification.
 
 | Entry | Observed direct source references | Scope / action |
 | --- | --- | --- |
@@ -117,8 +117,19 @@ Reviewed **current `main` source**, not an actual browser network capture. This 
 | `child-vault.js` | Local import `/treasure-catalog.js`; client connects to the configured Supabase endpoint using browser `fetch` | Child-session API calls still expose request metadata to Supabase; provider review remains necessary. |
 | `auth.html` | Dynamic module import from `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm` | **Third-party jsDelivr request on parent sign-in/setup page**. Parent device IP and request metadata may reach CDN; dependency version is major-version-wide rather than an exact pinned release. Consider independently tested self-hosting and exact-version pinning in a separate reviewed PR. Do not make this change as a quick untested prelaunch switch. |
 | `auth-config.js` | Public Supabase project URL and publishable key | Intended public client configuration, **not a service-role secret**. Verify network destinations and authentication headers; never expose credentials in public source. |
-| `privacy.html` | Lists GitHub Pages as current host, and Resend, Supabase, jsDelivr, Squarespace forwarding and Gmail | Correct for present GitHub hosting; **must coordinate with staged Netlify notice v5** in PR #71. Do not merge host-language changes independently from DNS notice/consent cutover. |
+| `privacy.html` | Lists GitHub Pages as host, despite Netlify handling live traffic; also lists Resend, Supabase, jsDelivr, Squarespace forwarding and Gmail | **Confirmed stale disclosure**. Stage correction with notice-v5/reconsent PR #71; do not silently change already-accepted privacy terms without coordinating server-side notice records. |
 
-**Read-only configuration check:** `site-contact.js` on `main` still has `privacyNoticeReviewed: false` and `parentPermissionEnabled: false`. The live Supabase privacy-release row was separately verified on November 23 with `notice_version=4`, `notice_ready=false`, `enforcement_enabled=false`, `email_method_reviewed=false`. The Netlify project reports a ready deploy; these facts **do not** authorize public permission enrollment.
+**Recorded earlier configuration snapshot (November 23):** `site-contact.js` had `privacyNoticeReviewed: false` and `parentPermissionEnabled: false`. The live Supabase privacy-release row was previously verified with `notice_version=4`, `notice_ready=false`, `enforcement_enabled=false`, `email_method_reviewed=false`. Treat these as dated observations, not proof of future release-flag state. The Netlify site is publicly reachable, but **this does not authorize real-family enrollment**.
 
-**Decision:** Keep provider and legal review open, plan a browser Network-tab capture for both child and parent entry flows, and treat minimizing jsDelivr exposure as a **separate testable hardening opportunity**, not as a prerequisite that is already complete.
+**Decision:** Keep provider and legal review open. Merged PR #80 documents partial homepage/parent Network-tab inspection; child-mode live capture still requires legitimately approved permission, and no gate should be bypassed to perform it. Treat minimizing jsDelivr exposure as a **separate testable hardening opportunity**, not a completed prerequisite.
+
+
+## 9. November 25, 2026 implementation checkpoint and practical launch sequencing
+
+**Completed technical milestones:** GitHub PRs #77, #78, #79 and #80 merged. PR #77's `require_live_session_for_treasure_listing` migration was applied to the production Supabase project and its installation inspected read-only; the operator reported a successful Parent Portal request-history smoke test. These do **not** demonstrate complete child-side integration, legal clearance or vendor security assurance.
+
+**Privacy evidence in progress:** Supabase, Resend and Netlify policies/communications have been reviewed during the launch work, but no qualified final email-plus determination, complete account-specific processor review or adopted written security program is claimed here. Keep actual contracts, reviewer decisions and incident/backup access details outside this public repository.
+
+**Two distinct milestones:** (A) **Website reachable:** Fairybucks may remain served at its public domain with parental enrollment/child permission gates closed. Search indexing, URL secrecy and absence of advertising are not security controls. (B) **Real families invited / child data collected:** Do not proceed until applicable consent, provider assurance, notice/version cutover, data-recovery plan and launch controls are satisfied. Testing with synthetic accounts on a production URL is not equivalent to collecting real children's information.
+
+**Operational next actions (no new configuration requested by this document):** adopt this written program privately, designate a named security owner, retain vendor security assurance evidence, decide on recovery/backup mitigation, get qualified advice on email-plus applicability to actual visitor identifiers and disclosures, and execute staged PR #71 only as a coordinated consent-version release. For readiness, review the current live deployment before claiming that any intentionally disabled test page is inaccessible.
