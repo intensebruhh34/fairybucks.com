@@ -158,7 +158,9 @@ export function createPermissionHandler({env,fetch:send,crypto:secure,atob:decod
     if(body.guardian!==true)return reply({status:'guardian_required'},400);
     result=await rpc('status');
     if(result.status!=='verified'&&result.permission_allowed!==true){
-     if(!['requested','confirming'].includes(result.status))result=await rpc('start',{p_guardian:true});
+     // Re-enter start for a pending request: it queues a notice if the prior attempt was throttled
+     // before a mail job existed. Core RPC keeps the cooldown and daily cap enforced.
+     if(result.status!=='confirming')result=await rpc('start',{p_guardian:true});
      if(result.status==='requested')result=await attemptMail(result,'notice');
      // Consent is not recorded here. The parent must open the unique email link
      // and affirmatively approve via permission.html after receiving the notice.

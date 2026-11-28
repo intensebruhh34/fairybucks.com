@@ -88,6 +88,14 @@ const checkEmailHandler=async function checkEmailHandler(source,notice,contact){
  r=await s.handler(s.request({action:'give_permission',expectedParent:uuid,guardian:true}));
  expect((await r.json()).status==='requested'&&s.mails.length===1,'Email request should not count as approval');
  expect(!s.calls.some(c=>c.url.includes('/rpc/')&&JSON.parse(c.init.body).p_action==='approve'),'Portal choice approved without email-link interaction');
+ // Regression: a prior rate-limited start can create a request but no mail job.
+ // A subsequent click must call start again, allowing core SQL to enqueue safely.
+ s=setup({kind:'notice',rpc:(p,result)=>p.p_action==='status'?result('requested'):null});
+ r=await s.handler(s.request({action:'give_permission',expectedParent:uuid,guardian:true}));
+ expect((await r.json()).status==='requested'&&s.mails.length===1,
+  'Existing unsent request did not enqueue and send notice');
+ expect(s.calls.some(c=>c.url.includes('/rpc/')&&JSON.parse(c.init.body).p_action==='start'),
+  'Existing unsent request bypassed rate-limited start and remained stuck');
  s=setup({mailFail:true,rpc:(p,result)=>p.p_action==='status'?result('needed'):null});
  r=await s.handler(s.request({action:'give_permission',expectedParent:uuid,guardian:true}));
  expect((await r.json()).status==='email_retry'&&!s.calls.some(c=>c.url.includes('/rpc/')&&JSON.parse(c.init.body).p_action==='approve'),'Failed notice allowed approval');
